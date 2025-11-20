@@ -114,11 +114,28 @@ export const foundService = {
   // ================================
   // 📌 5. Hapus laporan ditemukan
   // ================================
-  async deleteFound(id: number) {
-    return prisma.tb_foundReports.delete({
-      where: { id }
-    });
-  },
+  // Service
+async deleteFound(id: number) {
+  // 1️⃣ Validasi id
+  if (!id || isNaN(id) || id <= 0) {
+    throw new Error("ID tidak valid");
+  }
+
+  // 2️⃣ Cek apakah record ada
+  const existing = await prisma.tb_foundReports.findUnique({
+    where: { id }
+  });
+
+  if (!existing) {
+    throw new Error(`Laporan ditemukan dengan id ${id} tidak ditemukan`);
+  }
+
+  // 3️⃣ Hapus record
+  return prisma.tb_foundReports.delete({
+    where: { id }
+  });
+},
+
 
 
   // ================================

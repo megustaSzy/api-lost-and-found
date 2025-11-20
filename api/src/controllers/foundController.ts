@@ -125,24 +125,25 @@ export const foundController = {
         }
     },
 
-    async deleteFound(req: AuthRequest, res: Response) {
-        try {
-            const id = Number(req.params.id);
+async deleteFound(req: AuthRequest, res: Response) {
+    try {
+        const id = Number(req.params.id);
 
-            await foundService.deleteFound(id);
+        await foundService.deleteFound(id);
 
-            res.json({
-                success: true,
-                message: "Laporan penemuan berhasil dihapus"
-            });
+        res.json({
+            success: true,
+            message: "Laporan penemuan berhasil dihapus"
+        });
 
-        } catch (error: any) {
-            res.status(500).json({
-                success: false,
-                message: error.message || "Terjadi kesalahan"
-            });
-        }
-    },
+    } catch (error: any) {
+        res.status(400).json({  // pakai 400 karena biasanya ini error client (id invalid/tdk ditemukan)
+            success: false,
+            message: error.message || "Terjadi kesalahan"
+        });
+    }
+},
+
 
     async getFoundPendingForUser(req: AuthRequest, res: Response) {
         try {

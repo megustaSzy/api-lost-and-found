@@ -60,6 +60,7 @@ model tb_foundReports {
   createdAt     DateTime           @default(now())
 
   statusFound   FoundStatus        @default(PENDING)
+  createdByAdmin  Boolean          @default(false)
 
   // one-to-one relationship
   lostReport    tb_lostReport?     @relation("LostFoundRelation", fields: [lostReportId], references: [id])
