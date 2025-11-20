@@ -163,44 +163,40 @@ async deleteFound(req: AuthRequest, res: Response) {
         }
     },
 
-    async createAdminFoundReport(req: AuthRequest, res: Response) {
-        try {
-            const { namaBarang, deskripsi, lokasiTemu } = req.body;
+    
+async createAdminFoundReport(req: AuthRequest, res: Response) {
+  try {
+    const { namaBarang, deskripsi, lokasiTemu } = req.body;
+    // jika tidak ada file, imageUrl = undefined, bukan null
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const adminId = req.user.id;
+
+    const data = await foundService.createdAdminFoundReport(
+      { namaBarang, deskripsi, lokasiTemu, imageUrl },
+      adminId
+    );
+
+    res.status(201).json({ success: true, data });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+},
 
 
-            if(!namaBarang || !deskripsi || !lokasiTemu)
-                return res.status(400).json({
-                    success: false,
-                    message: "Semua field wajib diisi"
-                });
 
-                const report = await foundService.createdAdminFoundReport({ namaBarang, deskripsi, lokasiTemu });
-
-                res.json({
-                    success: true,
-                    message: "Laporan penemuan admin berhasil dibuat",
-                    data: report
-                })
-        } catch (error: any) {
-            res.status(500).json({
-                success: false,
-                message: error.message || "Terjadi kesalahan"
-            })
-        }
-    },
 
     async getAdminFoundReports(req: AuthRequest, res: Response) {
-        try {
-            const data = await foundService.getAdminFoundReport();
-            res.status(200).json({
-                success: true,
-                data
-            })
-        } catch (error: any) {
-            res.status(500).json({
-                success: false,
-                message: error.message || "Terjadi kesalahan"
-            })
-        }
-    }
+  try {
+    const data = await foundService.getAdminFoundReport();
+    res.status(200).json({ success: true, data });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+}
+
 };

@@ -25,4 +25,19 @@ router.patch("/:id/status", authMiddleware, authorizeRoles("Admin"), foundContro
 // DELETE
 router.delete("/:id", authMiddleware, authorizeRoles("Admin"), foundController.deleteFound);
 
+router.post(
+  "/admin/foundreports",
+  authMiddleware,                // cek login
+  authorizeRoles("Admin"),       // cek role admin
+  upload.single("image"),        // optional: upload file
+  foundController.createAdminFoundReport // panggil service createdAdminFoundReport
+);
+
+router.get(
+  "/foundreports/admin",
+  authMiddleware,                // cek login
+  foundController.getAdminFoundReports
+);
+
+
 export default router;
