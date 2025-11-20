@@ -110,10 +110,6 @@ export const foundService = {
     });
   },
 
-
-  // ================================
-  // 📌 5. Hapus laporan ditemukan
-  // ================================
   // Service
 async deleteFound(id: number) {
   // 1️⃣ Validasi id
@@ -136,11 +132,6 @@ async deleteFound(id: number) {
   });
 },
 
-
-
-  // ================================
-  // 📌 6. User – get pending
-  // ================================
   async getFoundPendingForUser() {
     return prisma.tb_foundReports.findMany({
       where: { statusFound: "PENDING" },
@@ -148,15 +139,34 @@ async deleteFound(id: number) {
     });
   },
 
-
-  // ================================
-  // 📌 7. User – get history
-  // ================================
   async getFoundHistoryForUser() {
     return prisma.tb_foundReports.findMany({
       where: { statusFound: "CLAIMED" },
       orderBy: { id: "desc" }
     });
-  }
+  },
 
+  async createdAdminFoundReport (data: FoundData) {
+    return prisma.tb_foundReports.create({
+      data: {
+        namaBarang: data.namaBarang,
+        deskripsi: data.deskripsi,
+        lokasiTemu: data.lokasiTemu,
+        imageUrl: data.imageUrl || null,
+        createdByAdmin: true,
+        lostReportId: null
+      }
+    })
+  },
+
+  async getAdminFoundReport() {
+    return prisma.tb_foundReports.findMany({
+      where: {
+        createdByAdmin: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+  }
 };

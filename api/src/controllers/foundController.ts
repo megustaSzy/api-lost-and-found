@@ -163,4 +163,44 @@ async deleteFound(req: AuthRequest, res: Response) {
         }
     },
 
+    async createAdminFoundReport(req: AuthRequest, res: Response) {
+        try {
+            const { namaBarang, deskripsi, lokasiTemu } = req.body;
+
+
+            if(!namaBarang || !deskripsi || !lokasiTemu)
+                return res.status(400).json({
+                    success: false,
+                    message: "Semua field wajib diisi"
+                });
+
+                const report = await foundService.createdAdminFoundReport({ namaBarang, deskripsi, lokasiTemu });
+
+                res.json({
+                    success: true,
+                    message: "Laporan penemuan admin berhasil dibuat",
+                    data: report
+                })
+        } catch (error: any) {
+            res.status(500).json({
+                success: false,
+                message: error.message || "Terjadi kesalahan"
+            })
+        }
+    },
+
+    async getAdminFoundReports(req: AuthRequest, res: Response) {
+        try {
+            const data = await foundService.getAdminFoundReport();
+            res.status(200).json({
+                success: true,
+                data
+            })
+        } catch (error: any) {
+            res.status(500).json({
+                success: false,
+                message: error.message || "Terjadi kesalahan"
+            })
+        }
+    }
 };
