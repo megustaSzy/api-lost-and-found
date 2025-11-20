@@ -1,17 +1,27 @@
 import { Router } from "express";
 import { userController } from "../controllers/userController";
-
+import { authMiddleware } from "../middlewares/authMiddleware";
+import { adminMiddleware } from "../middlewares/adminMiddleware";
 
 const router = Router();
 
-router.get("/", userController.getAllUsers);
+/* ======================
+   USER ROUTES (Protected)
+   ====================== */
 
-router.get("/:id", userController.getUserById)
+// 🔹 Profile user yang sedang login
+router.get("/profile", authMiddleware, userController.getProfile);
 
-router.put("/:id", userController.editUser)
+// 🔹 Hanya Admin boleh melihat semua user
+router.get("/", authMiddleware, adminMiddleware, userController.getAllUsers);
 
-router.delete("/:id", userController.deleteUser)
+// 🔹 Semua user yang login bisa melihat detail user (opsional)
+router.get("/:id", authMiddleware, userController.getUserById);
 
-router.post("/", userController.addUser)
+// 🔹 Edit user (boleh oleh user itu sendiri / admin — atur logic di controller)
+router.put("/:id", authMiddleware, userController.editUser);
 
-export default router
+// 🔹 Hanya Admin boleh menghapus user
+router.delete("/:id", authMiddleware, adminMiddleware, userController.deleteUser);
+
+export default router;

@@ -1,100 +1,92 @@
-import { Request, Response } from "express"
 import { userService } from "../services/userService"
-import prisma from "../lib/prisma";
+import { Request, Response, NextFunction } from "express";
+import { createError } from "../utils/createError";
 
 export const userController = {
-
-    async getAllUsers(req: Request, res: Response) {
-        const users = await userService.getAllUsers();
-
-        res.status(200).json({
-            users,
-            success: true
-        });
-    },
-
-    async getUserById(req: Request, res: Response) {
-
-        const id = Number(req.params.id)
-
-        if(isNaN(id)) {
-            return res.status(400).json({
-                message: "id tidak valid",
-                success: false
-            })
-        }
-
-        const userId = await userService.getUserById(id);
-
-        if(!userId) {
-            return res.status(404).json({
-                message: "id tidak ditemukan",
-                success: false
-            });
-        }
-
-        res.status(200).json({
-            userId,
-            success: true
-        });
-    },
-
-    async editUser(req: Request, res: Response) {
     
-        const editId = Number(req.params.id);
-
-        if(isNaN(editId)) {
-            return res.status(400).json({
-                message: "id tidak valid",
-                success: false
+    async getAllUsers(req: Request, res: Response, next: NextFunction) {
+        try {
+            const users = await userService.getAllUsers();
+    
+            return res.status(200).json({
+                success: true,
+                message: "Berhasil mengambil data users",
+                users
             });
+
+        } catch (error) {
+            next(error);
         }
-
-        const updatedUser = await userService.updateUserById(editId, req.body)
-
-        res.status(200).json({
-            message: "user berhasil diubah",
-            success: true,
-            user: updatedUser
-        });
     },
 
-    async deleteUser(req: Request, res: Response) {
-
-        const deleteId = Number(req.params.id)
-
-        if(isNaN(deleteId)) {
-            return res.status(400).json({
-                message: "id tidak valid",
-                success: false
-            });
-        }
-
-        const deleteUser = await userService.deleteUserById(deleteId)
-
-        if(!deleteUser) {
-            return res.status(400).json({
-                message: "user gagal dihapus",
-                success: false
-            });
-        }
-
-        res.status(200).json({
-            message: "user berhasil dihapus",
-            success: true
-        })
-
+    async getUserById(req: Request, res: Response, next: NextFunction) {
+        try {
+            
+            const id = Number(req.params.id);
+    
+            if(isNaN(id)) createError("id tidak valid", 400);
+    
+            const user = await userService.getUserById(id);
+    
+            if(!user) createError("user tidak ditemukan", 404);
+    
+            return res.status(200).json({
+                success: true,
+                user
+            })
+        } catch (error) {
+            next(error)
+        };
     },
 
-    async addUser (req: Request, res: Response) {
-        const user = await userService.addUserNew(req.body)
+    async editUser(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = Number(req.params.id)
 
-        res.status(200).json({
-            message: "berhasil membuat akun",
+            if(isNaN(id)) createError("id tidak valid", 400);
+
+            const currentUser = (req as any).user
+            
+            if (currentUser.role !== "Admin" && currentUser.id !== id) {
+                throw createError("akses ditolak", 403);
+            }
+
+            const updateUser = await userService.updateUserById(id, req.body);
+            
+            return res.status(200).json({
+                success: true,
+                message: "user berhasil diperbarui",
+                user: updateUser
+            })
+        } catch (error) {
+            next(error)
+        }
+    },
+
+    async deleteUser(req: Request, res: Response, next: NextFunction) {
+        try {
+            const id = Number(req.params.id);
+
+            if(isNaN(id)) createError("id tidak valid", 400);
+
+            const currentUser = (req as any).user
+            if(currentUser.role !== "Admin") createError("akses ditolak", 403);
+
+            await userService.deleteUserById(id);
+
+            return res.status(200).json({
+                success: true,
+                message: "user berhasil dihapus"
+            })
+        } catch (error) {
+            next(error)
+        }
+    },
+
+    async getProfile(req: Request, res: Response) {
+        return res.status(200).json({
             success: true,
-            user
+            user: (req as any).user
         })
     }
-
-
 }

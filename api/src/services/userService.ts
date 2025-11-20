@@ -1,24 +1,33 @@
 import prisma from "../lib/prisma";
+import bcrypt from "bcryptjs";
+import { createError } from "../utils/createError";
 
-interface UserData {
-    name: string,
-    email: string,
-    password: string,
-    notelp: string,
-    role: "Admin" | "User"
+
+interface UserData{
+    name: string;
+    email: string;
+    password: string;
+    notelp: string;
+    role: "Admin" | "User";
 }
 
 export const userService = {
 
-    // GET ALL
+    // GET all
     async getAllUsers() {
         return prisma.tb_user.findMany({
-            orderBy: {
-                id: 'asc'
-            }
-        })
+            where: { role: 'User' },
+                select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                notelp: true
+            },
+            orderBy: { id: 'asc' }
+            });
     },
-
+    // GET by ID
     async getUserById(id: number) {
         return prisma.tb_user.findUnique({
             where: {
@@ -27,15 +36,19 @@ export const userService = {
         });
     },
 
+    // update user by ID
     async updateUserById(id: number, data: UserData) {
+        
         const user = await prisma.tb_user.findUnique({
             where: {
                 id
             }
         });
 
-        if(!user) {
-            throw new Error ("user tidak ditemukan")
+        if(!user) createError("id tidak ditemukan", 404);
+
+        if(data.password) {
+            data.password = await bcrypt.hash(data.password, 10);
         }
 
         return prisma.tb_user.update({
@@ -43,19 +56,18 @@ export const userService = {
                 id
             },
             data
-        })
+        });
     },
 
     async deleteUserById(id: number) {
-        const user = await prisma.tb_user.findFirst({
+        
+        const user = await prisma.tb_user.findUnique({
             where: {
                 id
             }
         });
 
-        if(!user) {
-            throw new Error ("user tidak ditemukan")
-        }
+        if(!user) createError("id tidak ditemukan", 404);
 
         return prisma.tb_user.delete({
             where: {
@@ -64,26 +76,4 @@ export const userService = {
         })
     },
 
-    async addUserNew(data: UserData) {
-        const existingUser = await prisma.tb_user.findUnique({
-            where: {
-                email: data.email
-            }
-        });
-
-        if(existingUser) {
-            throw new Error("user tidak ditemukan")
-        }
-
-        return await prisma.tb_user.create({
-            data: {
-                name: data.name,
-                email: data.email,
-                password: data.password,
-                notelp: data.notelp,
-                role: data.role || "User"
-            }
-        });
-    }
-    
 }
