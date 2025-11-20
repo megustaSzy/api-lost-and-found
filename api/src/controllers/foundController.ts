@@ -1,27 +1,37 @@
 import { Request, Response } from "express";
 import { AuthRequest } from "../types/AuthRequest";
 import { foundService, FoundStatusType } from "../services/foundService";
+import { saveFoundReportImage } from "../services/imageService";
 
 export const foundController = {
 
     async createFound(req: AuthRequest, res: Response) {
-        try {
-            const data = req.body;
-            const report = await foundService.createFound(data);
+    try {
+      // Baca data dari form-data
+      const { namaBarang, deskripsi, lokasiTemu } = req.body;
 
-            res.json({
-                success: true,
-                message: "Laporan penemuan berhasil dibuat",
-                data: report
-            });
+      if (!namaBarang || !deskripsi || !lokasiTemu)
+        return res.status(400).json({ success: false, message: "Semua field wajib diisi" });
 
-        } catch (error: any) {
-            res.status(500).json({
-                success: false,
-                message: error.message || "Terjadi kesalahan"
-            });
-        }
-    },
+      // Create found report tanpa image dulu
+      const report = await foundService.createFound({ namaBarang, deskripsi, lokasiTemu });
+
+      // Kalau ada file image
+      if (req.file) {
+        const imageUrl = await saveFoundReportImage(req.file, report.id);
+        report.imageUrl = imageUrl;
+      }
+
+      res.json({
+        success: true,
+        message: "Laporan penemuan berhasil dibuat",
+        data: report,
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message || "Terjadi kesalahan" });
+    }
+  },
+
 
     async getAllFound(req: Request, res: Response) {
         try {

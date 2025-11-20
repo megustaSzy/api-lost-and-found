@@ -14,10 +14,6 @@ export interface FoundUpdateData extends FoundData {
 export type FoundStatusType = "PENDING" | "CLAIMED" | "REJECTED";
 
 export const foundService = {
-
-  // ================================
-  // 📌 1. ADMIN MEMBUAT LAPORAN PENEMUAN
-  // ================================
   async createFound(data: FoundData) {
     return prisma.tb_foundReports.create({
       data: {
@@ -25,9 +21,9 @@ export const foundService = {
         deskripsi: data.deskripsi,
         lokasiTemu: data.lokasiTemu,
         imageUrl: data.imageUrl || null,
-        lostReportId: null,          // FIX: admin tidak menghubungkan ke laporan hilang
-        statusFound: "PENDING",      // FIX: status awal
-      }
+        lostReportId: null,
+        statusFound: "PENDING",
+      },
     });
   },
 

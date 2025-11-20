@@ -7,15 +7,15 @@ export const authController = {
       const user = await authService.registerUser(req.body);
 
       return res.status(201).json({
-        success: true,
         message: "berhasil membuat akun",
+        success: true,
         user
       });
 
     } catch (error: any) {
       return res.status(400).json({
-        success: false,
-        message: error.message
+        message: error.message,
+        success: false
       });
     }
   },
@@ -26,23 +26,23 @@ export const authController = {
 
       if (!email || !password) {
         return res.status(400).json({
-          success: false,
-          message: "email dan password wajib diisi"
+          message: "email dan password wajib diisi",
+          success: false
         });
       }
 
-      const { user, token, refreshToken } = 
+      const { user, token, refreshToken } =
         await authService.loginUser(email, password);
 
-      // SIMPAN token (ACCESS TOKEN) DI COOKIE
-      res.cookie("token", token, {
+      // simpan ACCESS TOKEN di cookie
+      res.cookie("accessToken", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
         maxAge: 60 * 60 * 1000 // 1 jam
       });
 
-      // SIMPAN refreshToken DI COOKIE
+      // simpan REFRESH TOKEN di cookie
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -51,15 +51,15 @@ export const authController = {
       });
 
       return res.status(200).json({
-        success: true,
         message: "login berhasil",
+        success: true,
         user
       });
 
     } catch (error: any) {
       return res.status(401).json({
-        success: false,
-        message: error.message
+        message: error.message,
+        success: false
       });
     }
   },
@@ -75,10 +75,10 @@ export const authController = {
         });
       }
 
-      const newToken = await authService.refreshAccessToken(refreshToken);
+      const newAccessToken = await authService.refreshAccessToken(refreshToken);
 
-      // OVERWRITE COOKIE token yg lama
-      res.cookie("token", newToken, {
+      // overwrite accessToken cookie
+      res.cookie("accessToken", newAccessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
@@ -87,7 +87,7 @@ export const authController = {
 
       return res.json({
         success: true,
-        message: "token diperbarui"
+        message: "access token diperbarui"
       });
 
     } catch (error: any) {
@@ -100,15 +100,7 @@ export const authController = {
 
   async logout(req: Request, res: Response) {
     try {
-      const refreshToken = req.cookies.refreshToken;
-
-      // ⚠️ WAJIB: hapus refresh token dari DB
-      if (refreshToken) {
-        await authService.logoutUser(refreshToken);
-      }
-
-      // Hapus cookie
-      res.clearCookie("token");
+      res.clearCookie("accessToken");
       res.clearCookie("refreshToken");
 
       return res.json({
