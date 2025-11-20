@@ -2,24 +2,33 @@ import { authService } from "../services/authService";
 import { Request, Response } from "express";
 
 export const authController = {
+
+  /** ============================
+   *  POST /register
+   *  Membuat akun baru
+   *  ============================ */
   async register(req: Request, res: Response) {
     try {
       const user = await authService.registerUser(req.body);
 
       return res.status(201).json({
         success: true,
-        message: "berhasil membuat akun",
-        user
+        message: "Berhasil membuat akun",
+        user,
       });
 
     } catch (error: any) {
       return res.status(400).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   },
 
+  /** ============================
+   *  POST /login
+   *  Login user → generate token
+   *  ============================ */
   async login(req: Request, res: Response) {
     try {
       const { email, password } = req.body;
@@ -27,100 +36,101 @@ export const authController = {
       if (!email || !password) {
         return res.status(400).json({
           success: false,
-          message: "email dan password wajib diisi"
+          message: "Email dan password wajib diisi",
         });
       }
 
-      const { user, token, refreshToken } = 
-        await authService.loginUser(email, password);
+      // Proses login di service
+      const { user, token, refreshToken } = await authService.loginUser(email, password);
 
-      // SIMPAN token (ACCESS TOKEN) DI COOKIE
-      res.cookie("token", token, {
+      // Cookie access token (httpOnly)
+      res.cookie("accessToken", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 60 * 60 * 1000 // 1 jam
+        maxAge: 10 * 60 * 1000, // 10 menit
       });
 
-      // SIMPAN refreshToken DI COOKIE
+      // Cookie refresh token
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 hari
+        sameSite: "strict",
+        maxAge: 1 * 60 * 1000, // 1 menit (testing)
       });
 
       return res.status(200).json({
         success: true,
-        message: "login berhasil",
-        user
+        message: "Login berhasil",
+        user,
+        token,
+        refreshToken,
       });
 
     } catch (error: any) {
       return res.status(401).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   },
 
+  /** ============================
+   *  POST /refresh-token
+   *  Refresh access token baru
+   *  ============================ */
   async refreshToken(req: Request, res: Response) {
     try {
-      const refreshToken = req.cookies.refreshToken;
+      const token = req.cookies.refreshToken;
 
-      if (!refreshToken) {
+      if (!token) {
         return res.status(401).json({
           success: false,
-          message: "refresh token tidak ditemukan"
+          message: "Refresh token tidak ditemukan",
         });
       }
 
-      const newToken = await authService.refreshAccessToken(refreshToken);
+      const newAccessToken = await authService.refreshAccessToken(token);
 
-      // OVERWRITE COOKIE token yg lama
-      res.cookie("token", newToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 1000
-      });
-
-      return res.json({
+      return res.status(200).json({
         success: true,
-        message: "token diperbarui"
+        token: newAccessToken,
       });
 
     } catch (error: any) {
       return res.status(401).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
   },
 
+  /** ============================
+   *  POST /logout
+   *  Hapus refresh token
+   *  ============================ */
   async logout(req: Request, res: Response) {
     try {
-      const refreshToken = req.cookies.refreshToken;
+      const token = req.cookies.refreshToken;
 
-      // ⚠️ WAJIB: hapus refresh token dari DB
-      if (refreshToken) {
-        await authService.logoutUser(refreshToken);
+      if (token) {
+        await authService.logoutUser(token);
       }
 
-      // Hapus cookie
-      res.clearCookie("token");
       res.clearCookie("refreshToken");
+      res.clearCookie("accessToken");
 
-      return res.json({
+      return res.status(200).json({
         success: true,
-        message: "logout berhasil"
+        message: "Logout berhasil",
       });
 
     } catch (error: any) {
       return res.status(500).json({
         success: false,
-        message: error.message
+        message: error.message,
       });
     }
-  }
+  },
+
 };

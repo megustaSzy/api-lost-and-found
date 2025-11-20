@@ -1,27 +1,37 @@
 import { Request, Response } from "express";
 import { AuthRequest } from "../types/AuthRequest";
 import { foundService, FoundStatusType } from "../services/foundService";
+import { saveFoundReportImage } from "../services/imageService";
 
 export const foundController = {
 
     async createFound(req: AuthRequest, res: Response) {
-        try {
-            const data = req.body;
-            const report = await foundService.createFound(data);
+    try {
+      // Baca data dari form-data
+      const { namaBarang, deskripsi, lokasiTemu } = req.body;
 
-            res.json({
-                success: true,
-                message: "Laporan penemuan berhasil dibuat",
-                data: report
-            });
+      if (!namaBarang || !deskripsi || !lokasiTemu)
+        return res.status(400).json({ success: false, message: "Semua field wajib diisi" });
 
-        } catch (error: any) {
-            res.status(500).json({
-                success: false,
-                message: error.message || "Terjadi kesalahan"
-            });
-        }
-    },
+      // Create found report tanpa image dulu
+      const report = await foundService.createFound({ namaBarang, deskripsi, lokasiTemu });
+
+      // Kalau ada file image
+      if (req.file) {
+        const imageUrl = await saveFoundReportImage(req.file, report.id);
+        report.imageUrl = imageUrl;
+      }
+
+      res.json({
+        success: true,
+        message: "Laporan penemuan berhasil dibuat",
+        data: report,
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message || "Terjadi kesalahan" });
+    }
+  },
+
 
     async getAllFound(req: Request, res: Response) {
         try {
@@ -115,24 +125,25 @@ export const foundController = {
         }
     },
 
-    async deleteFound(req: AuthRequest, res: Response) {
-        try {
-            const id = Number(req.params.id);
+async deleteFound(req: AuthRequest, res: Response) {
+    try {
+        const id = Number(req.params.id);
 
-            await foundService.deleteFound(id);
+        await foundService.deleteFound(id);
 
-            res.json({
-                success: true,
-                message: "Laporan penemuan berhasil dihapus"
-            });
+        res.json({
+            success: true,
+            message: "Laporan penemuan berhasil dihapus"
+        });
 
-        } catch (error: any) {
-            res.status(500).json({
-                success: false,
-                message: error.message || "Terjadi kesalahan"
-            });
-        }
-    },
+    } catch (error: any) {
+        res.status(400).json({  // pakai 400 karena biasanya ini error client (id invalid/tdk ditemukan)
+            success: false,
+            message: error.message || "Terjadi kesalahan"
+        });
+    }
+},
+
 
     async getFoundPendingForUser(req: AuthRequest, res: Response) {
         try {
@@ -151,5 +162,41 @@ export const foundController = {
             res.status(500).json({ success: false, message: error.message });
         }
     },
+
+    
+async createAdminFoundReport(req: AuthRequest, res: Response) {
+  try {
+    const { namaBarang, deskripsi, lokasiTemu } = req.body;
+    // jika tidak ada file, imageUrl = undefined, bukan null
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const adminId = req.user.id;
+
+    const data = await foundService.createdAdminFoundReport(
+      { namaBarang, deskripsi, lokasiTemu, imageUrl },
+      adminId
+    );
+
+    res.status(201).json({ success: true, data });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+},
+
+
+
+
+    async getAdminFoundReports(req: AuthRequest, res: Response) {
+  try {
+    const data = await foundService.getAdminFoundReport();
+    res.status(200).json({ success: true, data });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+}
 
 };

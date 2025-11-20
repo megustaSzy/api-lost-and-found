@@ -14,10 +14,6 @@ export interface FoundUpdateData extends FoundData {
 export type FoundStatusType = "PENDING" | "CLAIMED" | "REJECTED";
 
 export const foundService = {
-
-  // ================================
-  // 📌 1. ADMIN MEMBUAT LAPORAN PENEMUAN
-  // ================================
   async createFound(data: FoundData) {
     return prisma.tb_foundReports.create({
       data: {
@@ -25,9 +21,9 @@ export const foundService = {
         deskripsi: data.deskripsi,
         lokasiTemu: data.lokasiTemu,
         imageUrl: data.imageUrl || null,
-        lostReportId: null,          // FIX: admin tidak menghubungkan ke laporan hilang
-        statusFound: "PENDING",      // FIX: status awal
-      }
+        lostReportId: null,
+        statusFound: "PENDING",
+      },
     });
   },
 
@@ -114,20 +110,28 @@ export const foundService = {
     });
   },
 
+  // Service
+async deleteFound(id: number) {
+  // 1️⃣ Validasi id
+  if (!id || isNaN(id) || id <= 0) {
+    throw new Error("ID tidak valid");
+  }
 
-  // ================================
-  // 📌 5. Hapus laporan ditemukan
-  // ================================
-  async deleteFound(id: number) {
-    return prisma.tb_foundReports.delete({
-      where: { id }
-    });
-  },
+  // 2️⃣ Cek apakah record ada
+  const existing = await prisma.tb_foundReports.findUnique({
+    where: { id }
+  });
 
+  if (!existing) {
+    throw new Error(`Laporan ditemukan dengan id ${id} tidak ditemukan`);
+  }
 
-  // ================================
-  // 📌 6. User – get pending
-  // ================================
+  // 3️⃣ Hapus record
+  return prisma.tb_foundReports.delete({
+    where: { id }
+  });
+},
+
   async getFoundPendingForUser() {
     return prisma.tb_foundReports.findMany({
       where: { statusFound: "PENDING" },
@@ -135,15 +139,38 @@ export const foundService = {
     });
   },
 
-
-  // ================================
-  // 📌 7. User – get history
-  // ================================
   async getFoundHistoryForUser() {
     return prisma.tb_foundReports.findMany({
       where: { statusFound: "CLAIMED" },
       orderBy: { id: "desc" }
     });
-  }
+  },
+
+  async createdAdminFoundReport(data: FoundData, adminId: number) {
+  return prisma.tb_foundReports.create({
+    data: {
+      namaBarang: data.namaBarang,
+      deskripsi: data.deskripsi,
+      lokasiTemu: data.lokasiTemu,
+      imageUrl: data.imageUrl || null,
+      createdByAdmin: true,
+      adminId: adminId,
+      lostReportId: null,
+      statusFound: "PENDING",
+    }
+  });
+},
+
+
+
+ async getAdminFoundReport() {
+  return prisma.tb_foundReports.findMany({
+    where: { createdByAdmin: true },
+    include: {
+      admin: { select: { name: true } }, // pastikan field ini ada di tabel admin/user
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
 
 };
