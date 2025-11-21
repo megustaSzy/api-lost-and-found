@@ -27,15 +27,14 @@ router.delete("/:id", authMiddleware, authorizeRoles("Admin"), foundController.d
 
 router.post(
   "/admin/foundreports",
-  authMiddleware,                // cek login
-  authorizeRoles("Admin"),       // cek role admin
-  upload.single("image"),        // optional: upload file
-  foundController.createAdminFoundReport // panggil service createdAdminFoundReport
-);
+  authMiddleware,
+  authorizeRoles("Admin"),
+  upload.single("image"), foundController.createAdminFoundReport);
 
+// GET laporan admin
 router.get(
   "/foundreports/admin",
-  authMiddleware,                // cek login
+  authMiddleware,
   foundController.getAdminFoundReports
 );
 

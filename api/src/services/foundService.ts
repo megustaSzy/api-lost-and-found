@@ -147,30 +147,34 @@ async deleteFound(id: number) {
   },
 
   async createdAdminFoundReport(data: FoundData, adminId: number) {
-  return prisma.tb_foundReports.create({
-    data: {
-      namaBarang: data.namaBarang,
-      deskripsi: data.deskripsi,
-      lokasiTemu: data.lokasiTemu,
-      imageUrl: data.imageUrl || null,
-      createdByAdmin: true,
-      adminId: adminId,
-      lostReportId: null,
-      statusFound: "PENDING",
-    }
-  });
-},
+    return prisma.tb_foundReports.create({
+      data: {
+        namaBarang: data.namaBarang,
+        deskripsi: data.deskripsi,
+        lokasiTemu: data.lokasiTemu,
+        imageUrl: data.imageUrl || null,
+        createdByAdmin: true,
+        adminId,
+        lostReportId: null,
+        statusFound: "CLAIMED",
+      },
+    });
+  },
 
 
 
- async getAdminFoundReport() {
+async getAdminFoundReport() {
   return prisma.tb_foundReports.findMany({
-    where: { createdByAdmin: true },
+    where: { 
+      createdByAdmin: true,
+      statusFound: "CLAIMED", // <<< tambahkan filter ini
+    },
     include: {
-      admin: { select: { name: true } }, // pastikan field ini ada di tabel admin/user
+      admin: { select: { name: true } },
     },
     orderBy: { createdAt: 'desc' },
   });
 }
+
 
 };
