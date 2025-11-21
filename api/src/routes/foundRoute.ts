@@ -26,17 +26,9 @@ router.patch("/:id/status", authMiddleware, authorizeRoles("Admin"), foundContro
 router.delete("/:id", authMiddleware, authorizeRoles("Admin"), foundController.deleteFound);
 
 router.post(
-  "/admin/foundreports",
-  authMiddleware,
-  authorizeRoles("Admin"),
-  upload.single("image"), foundController.createAdminFoundReport);
+  "/admin/foundreports", authMiddleware, authorizeRoles("Admin"), upload.single("image"), foundController.createAdminFoundReport);
 
 // GET laporan admin
-router.get(
-  "/foundreports/admin",
-  authMiddleware,
-  foundController.getAdminFoundReports
-);
-
+router.get("/foundreports/admin", authMiddleware, foundController.getAdminFoundReports);
 
 export default router;

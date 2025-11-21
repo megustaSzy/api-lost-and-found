@@ -146,35 +146,30 @@ async deleteFound(id: number) {
     });
   },
 
-  async createdAdminFoundReport(data: FoundData, adminId: number) {
-    return prisma.tb_foundReports.create({
-      data: {
-        namaBarang: data.namaBarang,
-        deskripsi: data.deskripsi,
-        lokasiTemu: data.lokasiTemu,
-        imageUrl: data.imageUrl || null,
-        createdByAdmin: true,
-        adminId,
-        lostReportId: null,
-        statusFound: "CLAIMED",
-      },
-    });
-  },
-
-
+async createdAdminFoundReport(data: FoundData, adminId: number) {
+  return prisma.tb_foundReports.create({
+    data: {
+      namaBarang: data.namaBarang,
+      deskripsi: data.deskripsi,
+      lokasiTemu: data.lokasiTemu,
+      imageUrl: data.imageUrl || undefined, // gunakan undefined sesuai tipe
+      createdByAdmin: true,
+      adminId,
+      lostReportId: null,
+      statusFound: "CLAIMED", // langsung CLAIMED
+    },
+  });
+},
 
 async getAdminFoundReport() {
   return prisma.tb_foundReports.findMany({
-    where: { 
-      createdByAdmin: true,
-      statusFound: "CLAIMED", // <<< tambahkan filter ini
-    },
-    include: {
-      admin: { select: { name: true } },
-    },
+    where: { createdByAdmin: true, statusFound: "CLAIMED" }, // filter langsung CLAIMED
+    include: { admin: { select: { name: true } } },
     orderBy: { createdAt: 'desc' },
   });
 }
+
+
 
 
 };
