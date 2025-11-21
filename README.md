@@ -1,6 +1,3 @@
-Berikut saya buatkan **README.md** untuk GitHub project-mu yang sesuai dengan stack dan keterangan yang kamu berikan:
-
-````markdown
 # Lost and Found API
 
 API ini dibuat untuk **mengelola sistem Lost and Found**, termasuk manajemen user, item hilang/temuan, autentikasi, dan upload file.
