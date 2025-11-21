@@ -6,11 +6,11 @@ API ini dibuat untuk **mengelola sistem Lost and Found**, termasuk manajemen use
 
 ## Stack
 
-- **Programming Language**: Node.js + Express v5.1.0  
-- **ORM**: Prisma v6.19.0  
-- **Authentication**: JSON Web Token (jsonwebtoken v9.0.2)  
-- **File Upload**: Multer v2.0.2  
-- **Database**: PostgreSQL v17.6.1  
+- **Programming Language**: Node.js + Express (v5.1.0)  
+- **ORM**: Prisma (v6.19.0)  
+- **Authentication**: JSON Web Token (v9.0.2)  
+- **File Upload**: Multer (v2.0.2)  
+- **Database**: PostgreSQL (v17.6.1)  
 
 ---
 
@@ -66,9 +66,4 @@ Server akan berjalan di `http://localhost:3001` (atau sesuai konfigurasi).
 
 ---
 
-## License
-
-MIT License
-
-```
 
