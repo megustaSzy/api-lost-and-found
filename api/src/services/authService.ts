@@ -19,7 +19,9 @@ interface UserData {
 export const authService = {
   // REGISTER
   async registerUser(data: UserData) {
+
     const existingUser = await prisma.tb_user.findUnique({ where: { email: data.email } });
+
     if (existingUser) throw new Error("Email sudah digunakan");
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -37,10 +39,13 @@ export const authService = {
 
   // LOGIN
   async loginUser(email: string, password: string) {
+
     const user = await prisma.tb_user.findUnique({ where: { email } });
+
     if (!user) throw new Error("Email tidak ditemukan");
 
     const isMatch = await bcrypt.compare(password, user.password);
+    
     if (!isMatch) throw new Error("Password salah");
 
     // Hapus refresh token lama
