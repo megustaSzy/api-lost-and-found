@@ -1,6 +1,7 @@
 import prisma from "../lib/prisma";
 import bcrypt from "bcryptjs";
 import jwt, { Secret } from "jsonwebtoken";
+import { AuthData } from "../types/auth";
 
 // Ambil dari .env
 const JWT_SECRET: Secret = process.env.JWT_SECRET as string;
@@ -8,17 +9,11 @@ const JWT_REFRESH_SECRET: Secret = process.env.JWT_REFRESH_SECRET as string;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
 
-interface UserData {
-  name: string;
-  email: string;
-  password: string;
-  role: "Admin" | "User";
-  notelp: string;
-}
+
 
 export const authService = {
   // REGISTER
-  async registerUser(data: UserData) {
+  async registerUser(data: AuthData) {
 
     const existingUser = await prisma.tb_user.findUnique({ where: { email: data.email } });
 
