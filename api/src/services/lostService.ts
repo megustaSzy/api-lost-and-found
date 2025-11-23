@@ -1,11 +1,5 @@
 import prisma from "../lib/prisma";
-
-interface LostData {
-  namaBarang: string;
-  deskripsi: string;
-  lokasiHilang: string;
-  imageUrl?: string;
-}
+import { LostData } from "../types/lost";
 
 export const lostService = {
   async createLost(userId: number, data: LostData) {
