@@ -1,7 +1,7 @@
 import { Response } from 'express'
 import logger from './Log'
 import { StatusCodes } from 'http-status-codes'
-import { CONFIG } from '../config'
+import { CONFIG } from '../config/index'
 
 
 
