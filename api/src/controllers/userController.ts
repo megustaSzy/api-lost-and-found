@@ -1,6 +1,5 @@
 import { userService } from "../services/userService"
 import { Request, Response, NextFunction } from "express";
-import { createError } from "../utils/createError";
 import { ResponseData } from "../utils/Response";
 
 export const userController = {
@@ -38,23 +37,19 @@ export const userController = {
         try {
             const id = Number(req.params.id)
 
-            if(isNaN(id)) createError("id tidak valid", 400);
+            if(isNaN(id)) return ResponseData.badRequest(res, "id tidak valid");
 
             const currentUser = (req as any).user
             
             if (currentUser.role !== "Admin" && currentUser.id !== id) {
-                throw createError("akses ditolak", 403);
+                ResponseData.forbidden(res, "akses ditolak")
             }
 
             const updateUser = await userService.updateUserById(id, req.body);
             
-            return res.status(200).json({
-                success: true,
-                message: "user berhasil diperbarui",
-                user: updateUser
-            })
+            return ResponseData.ok(res, updateUser, "user berhasil diperbarui");
         } catch (error) {
-            next(error)
+            return ResponseData.serverError(res, error)
         }
     },
 
@@ -62,26 +57,20 @@ export const userController = {
         try {
             const id = Number(req.params.id);
 
-            if(isNaN(id)) createError("id tidak valid", 400);
+            if(isNaN(id)) return ResponseData.badRequest(res, "id tidak valid");
 
             const currentUser = (req as any).user
-            if(currentUser.role !== "Admin") createError("akses ditolak", 403);
+            if(currentUser.role !== "Admin") ResponseData.forbidden(res, "akses ditolak")
 
             await userService.deleteUserById(id);
 
-            return res.status(200).json({
-                success: true,
-                message: "user berhasil dihapus"
-            })
+            return ResponseData.ok(res, "akses ditolak")
         } catch (error) {
-            next(error)
+            return ResponseData.serverError(res, error)
         }
     },
 
     async getProfile(req: Request, res: Response) {
-        return res.status(200).json({
-            success: true,
-            user: (req as any).user
-        })
+        return ResponseData.ok(res, (req as any).user, "profil berhasil diambil")
     }
 }
