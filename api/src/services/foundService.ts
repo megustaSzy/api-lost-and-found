@@ -1,17 +1,5 @@
 import prisma from "../lib/prisma";
-
-export interface FoundData {
-  namaBarang: string;
-  deskripsi: string;
-  lokasiTemu: string;
-  imageUrl?: string;
-}
-
-export interface FoundUpdateData extends FoundData {
-  lostReportId?: number | null;
-}
-
-export type FoundStatusType = "PENDING" | "CLAIMED" | "REJECTED";
+import { FoundData, FoundStatusType, FoundUpdateData } from "../types/found";
 
 export const foundService = {
   async createFound(data: FoundData) {
@@ -27,10 +15,6 @@ export const foundService = {
     });
   },
 
-
-  // ================================
-  // 📌 2. GET semua laporan untuk admin
-  // ================================
   async getAllFound() {
     return prisma.tb_foundReports.findMany({
       include: {
@@ -49,11 +33,6 @@ export const foundService = {
     });
     },
 
-
-
-  // ================================
-  // 📌 3. Update laporan penemuan oleh admin
-  // ================================
   async updateFound(foundId: number, data: FoundUpdateData) {
 
   let newStatus: FoundStatusType = "PENDING";
@@ -82,12 +61,6 @@ export const foundService = {
   });
 },
 
-
-
-
-  // ================================
-  // 📌 4. Update status found
-  // ================================
   async updateFoundStatus(foundId: number, status: FoundStatusType) {
     const existing = await prisma.tb_foundReports.findUnique({
       where: { id: foundId },
