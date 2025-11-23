@@ -1,5 +1,6 @@
-import { authService } from "../services/authService";
 import { Request, Response } from "express";
+import { authService } from "../services/authService";
+import { ResponseData } from "../utils/Response";
 
 export const authController = {
 
@@ -7,17 +8,10 @@ export const authController = {
     try {
       const user = await authService.registerUser(req.body);
 
-      return res.status(201).json({
-        success: true,
-        message: "Berhasil membuat akun",
-        user,
-      });
+      return ResponseData.created(res, user, "Berhasil membuat akun");
 
     } catch (error: any) {
-      return res.status(400).json({
-        success: false,
-        message: error.message,
-      });
+      return ResponseData.badRequest(res, error.message);
     }
   },
 
@@ -26,44 +20,31 @@ export const authController = {
       const { email, password } = req.body;
 
       if (!email || !password) {
-        return res.status(400).json({
-          success: false,
-          message: "Email dan password wajib diisi",
-        });
+        return ResponseData.badRequest(res, "Email dan password wajib diisi");
       }
 
-      // Proses login di service
       const { user, token, refreshToken } = await authService.loginUser(email, password);
 
-      // Cookie access token (httpOnly)
+      // Set cookie access token
       res.cookie("accessToken", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 10 * 60 * 1000, // 10 menit
+        maxAge: 10 * 60 * 1000,
       });
 
-      // Cookie refresh token
+      // Set cookie refresh token
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        maxAge: 1 * 60 * 1000, // 1 menit (testing)
+        maxAge: 1 * 60 * 1000,
       });
 
-      return res.status(200).json({
-        success: true,
-        message: "Login berhasil",
-        user,
-        token,
-        refreshToken,
-      });
+      return ResponseData.ok(res, { user, token, refreshToken }, "Login berhasil");
 
     } catch (error: any) {
-      return res.status(401).json({
-        success: false,
-        message: error.message,
-      });
+      return ResponseData.unauthorized(res, error.message);
     }
   },
 
@@ -72,24 +53,15 @@ export const authController = {
       const token = req.cookies.refreshToken;
 
       if (!token) {
-        return res.status(401).json({
-          success: false,
-          message: "Refresh token tidak ditemukan",
-        });
+        return ResponseData.unauthorized(res, "Refresh token tidak ditemukan");
       }
 
       const newAccessToken = await authService.refreshAccessToken(token);
 
-      return res.status(200).json({
-        success: true,
-        token: newAccessToken,
-      });
+      return ResponseData.ok(res, { token: newAccessToken });
 
     } catch (error: any) {
-      return res.status(401).json({
-        success: false,
-        message: error.message,
-      });
+      return ResponseData.unauthorized(res, error.message);
     }
   },
 
@@ -104,16 +76,10 @@ export const authController = {
       res.clearCookie("refreshToken");
       res.clearCookie("accessToken");
 
-      return res.status(200).json({
-        success: true,
-        message: "Logout berhasil",
-      });
+      return ResponseData.ok(res, null, "Logout berhasil");
 
     } catch (error: any) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-      });
+      return ResponseData.serverError(res, error.message);
     }
   },
 

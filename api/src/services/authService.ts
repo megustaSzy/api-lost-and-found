@@ -3,19 +3,18 @@ import bcrypt from "bcryptjs";
 import jwt, { Secret } from "jsonwebtoken";
 import { AuthData } from "../types/auth";
 
-// Ambil dari .env
 const JWT_SECRET: Secret = process.env.JWT_SECRET as string;
 const JWT_REFRESH_SECRET: Secret = process.env.JWT_REFRESH_SECRET as string;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
 
-
-
 export const authService = {
-  // REGISTER
+
   async registerUser(data: AuthData) {
 
-    const existingUser = await prisma.tb_user.findUnique({ where: { email: data.email } });
+    const existingUser = await prisma.tb_user.findUnique({
+      where: { email: data.email }
+    });
 
     if (existingUser) throw new Error("Email sudah digunakan");
 
@@ -32,34 +31,27 @@ export const authService = {
     });
   },
 
-  // LOGIN
   async loginUser(email: string, password: string) {
 
     const user = await prisma.tb_user.findUnique({ where: { email } });
-
     if (!user) throw new Error("Email tidak ditemukan");
 
     const isMatch = await bcrypt.compare(password, user.password);
-    
     if (!isMatch) throw new Error("Password salah");
 
     // Hapus refresh token lama
     await prisma.tb_refreshToken.deleteMany({ where: { userId: user.id } });
 
-    // ACCESS TOKEN
-    const accessPayload = { id: user.id, email: user.email, role: user.role };
     const token = jwt.sign(
-      accessPayload,
+      { id: user.id, email: user.email, role: user.role },
       JWT_SECRET,
-      { expiresIn: parseJWTExpiry(JWT_EXPIRES_IN) } // angka detik
+      { expiresIn: parseJWTExpiry(JWT_EXPIRES_IN) }
     );
 
-    // REFRESH TOKEN
-    const refreshPayload = { id: user.id };
     const refreshToken = jwt.sign(
-      refreshPayload,
+      { id: user.id },
       JWT_REFRESH_SECRET,
-      { expiresIn: parseJWTExpiry(JWT_REFRESH_EXPIRES_IN) } // angka detik
+      { expiresIn: parseJWTExpiry(JWT_REFRESH_EXPIRES_IN) }
     );
 
     // Simpan refresh token ke DB
@@ -75,9 +67,9 @@ export const authService = {
     return { user: safeUser, token, refreshToken };
   },
 
-  // REFRESH ACCESS TOKEN
   async refreshAccessToken(refreshToken: string) {
     let payload: any;
+
     try {
       payload = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
     } catch {
@@ -87,36 +79,32 @@ export const authService = {
     const user = await prisma.tb_user.findUnique({ where: { id: payload.id } });
     if (!user) throw new Error("User tidak ditemukan");
 
-    const newAccessPayload = { id: user.id, email: user.email, role: user.role };
-    const newAccessToken = jwt.sign(
-      newAccessPayload,
+    return jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: parseJWTExpiry(JWT_EXPIRES_IN) }
     );
-
-    return newAccessToken;
   },
 
-  // LOGOUT
   async logoutUser(refreshToken: string) {
-    await prisma.tb_refreshToken.deleteMany({ where: { token: refreshToken } });
+    await prisma.tb_refreshToken.deleteMany({
+      where: { token: refreshToken }
+    });
   }
 };
 
-// Convert "1h", "7d" ke detik untuk jwt.sign
 function parseJWTExpiry(exp: string): number {
-  const num = parseInt(exp);
-  if (exp.endsWith("d")) return num * 24 * 60 * 60;
-  if (exp.endsWith("h")) return num * 60 * 60;
-  if (exp.endsWith("m")) return num * 60;
-  return num;
+  const n = parseInt(exp);
+  if (exp.endsWith("d")) return n * 86400;
+  if (exp.endsWith("h")) return n * 3600;
+  if (exp.endsWith("m")) return n * 60;
+  return n;
 }
 
-// Convert "1h", "7d" ke ms untuk simpan DB
 function parseExpiryToMs(exp: string): number {
-  const num = parseInt(exp);
-  if (exp.endsWith("d")) return num * 24 * 60 * 60 * 1000;
-  if (exp.endsWith("h")) return num * 60 * 60 * 1000;
-  if (exp.endsWith("m")) return num * 60 * 1000;
-  return num * 1000;
+  const n = parseInt(exp);
+  if (exp.endsWith("d")) return n * 86400000;
+  if (exp.endsWith("h")) return n * 3600000;
+  if (exp.endsWith("m")) return n * 60000;
+  return n * 1000;
 }
