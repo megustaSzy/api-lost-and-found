@@ -2,38 +2,83 @@ import fs from "fs";
 import path from "path";
 import prisma from "../lib/prisma";
 
-// Simpan gambar lost report
-export const saveLostReportImage = async (file: Express.Multer.File, reportId: number) => {
+// ---------------------------
+// Utility: Sanitasi filename
+// ---------------------------
+const sanitizeFilename = (filename: string) => {
+  return filename.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+};
+
+// ---------------------------
+// Utility: Simpan file ke folder
+// ---------------------------
+const saveFileToUploads = (file: Express.Multer.File) => {
   const uploadDir = path.join(process.cwd(), "public/uploads");
-  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-  const filename = `${Date.now()}-${file.originalname}`;
-  fs.writeFileSync(path.join(uploadDir, filename), file.buffer);
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
 
-  const imageUrl = `/uploads/${filename}`;
+  const safeName = sanitizeFilename(file.originalname);
+  const filename = `${Date.now()}-${safeName}`;
+  const filepath = path.join(uploadDir, filename);
 
-  await prisma.tb_lostReport.update({
+  fs.writeFileSync(filepath, file.buffer);
+
+  return `/uploads/${filename}`;
+};
+
+// ---------------------------
+// Reusable function untuk update DB
+// ---------------------------
+const updateImageUrlInDB = async (
+  reportId: number,
+  imageUrl: string,
+  type: "lost" | "found"
+) => {
+  if (type === "lost") {
+    return prisma.tb_lostReport.update({
+      where: { id: reportId },
+      data: { imageUrl },
+    });
+  }
+
+  return prisma.tb_foundReports.update({
     where: { id: reportId },
     data: { imageUrl },
   });
+};
+
+// ---------------------------
+// Public functions
+// ---------------------------
+
+// LOST REPORT
+export const saveLostReportImage = async (
+  file: Express.Multer.File,
+  reportId: number
+) => {
+  if (!file) throw new Error("File tidak ditemukan");
+  if (!reportId) throw new Error("Report ID tidak valid");
+
+  const imageUrl = saveFileToUploads(file);
+
+  await updateImageUrlInDB(reportId, imageUrl, "lost");
 
   return imageUrl;
 };
 
-// Simpan gambar found report
-export const saveFoundReportImage = async (file: Express.Multer.File, reportId: number) => {
-  const uploadDir = path.join(process.cwd(), "public/uploads");
-  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+// FOUND REPORT
+export const saveFoundReportImage = async (
+  file: Express.Multer.File,
+  reportId: number
+) => {
+  if (!file) throw new Error("File tidak ditemukan");
+  if (!reportId) throw new Error("Report ID tidak valid");
 
-  const filename = `${Date.now()}-${file.originalname}`;
-  fs.writeFileSync(path.join(uploadDir, filename), file.buffer);
+  const imageUrl = saveFileToUploads(file);
 
-  const imageUrl = `/uploads/${filename}`;
-
-  await prisma.tb_foundReports.update({
-    where: { id: reportId },
-    data: { imageUrl },
-  });
+  await updateImageUrlInDB(reportId, imageUrl, "found");
 
   return imageUrl;
 };
