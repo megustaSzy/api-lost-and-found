@@ -1,16 +1,18 @@
-import { Request, Response } from "express";
+import { Request, response, Response } from "express";
 import { AuthRequest } from "../types/AuthRequest";
-import { foundService, FoundStatusType } from "../services/foundService";
+import { foundService } from "../services/foundService";
 import { saveFoundReportImage } from "../services/imageService";
+import { FoundStatusType } from "../types/found";
+import { ResponseData } from "../utils/Response";
+import { resolveObjectURL } from "buffer";
 
 export const foundController = {
-  // ==================== User Create ====================
   async createFound(req: AuthRequest, res: Response) {
     try {
       const { namaBarang, deskripsi, lokasiTemu } = req.body;
 
       if (!namaBarang || !lokasiTemu || !deskripsi) {
-        return res.status(400).json({ success: false, message: "Semua field wajib diisi" });
+        return ResponseData.notFound(res, "semua field wajib diisi");
       }
 
       // create found report tanpa image dulu
@@ -22,28 +24,26 @@ export const foundController = {
         report.imageUrl = imageUrl;
       }
 
-      res.status(201).json({ success: true, message: "Laporan berhasil dibuat", data: report });
+      return ResponseData.created(res, report, "laporan berhasil dibuat");
+
     } catch (err: any) {
-      res.status(500).json({ success: false, message: err.message || "Terjadi kesalahan" });
+      return ResponseData.serverError(res, err)
     }
   },
 
-  // ==================== Admin Create ====================
   async createAdminFoundReport(req: AuthRequest, res: Response) {
     try {
       const { namaBarang, deskripsi, lokasiTemu } = req.body;
 
-      if (!req.user?.id) return res.status(401).json({ success: false, message: "Unauthorized" });
+      if (!req.user?.id) return ResponseData.unauthorized(res, "unauthorized");
 
       const adminId = req.user.id;
 
-      // ✅ buat report dulu tanpa image
       const report = await foundService.createdAdminFoundReport(
         { namaBarang, deskripsi, lokasiTemu },
         adminId
       );
 
-      // ✅ simpan image kalau ada
       if (req.file) {
         const imageUrl = await saveFoundReportImage(req.file, report.id);
 
@@ -58,93 +58,118 @@ export const foundController = {
         report.imageUrl = imageUrl;
       }
 
-      res.status(201).json({ success: true, data: report });
+      return ResponseData.created(res, report, "data berhasil ditambahkan");
+
     } catch (err: any) {
-      res.status(500).json({ success: false, message: err.message });
+      return ResponseData.serverError(res, err)
     }
   },
 
-
-  // ==================== Admin Get Reports ====================
   async getAdminFoundReports(req: AuthRequest, res: Response) {
     try {
       const data = await foundService.getAdminFoundReport();
-      res.status(200).json({ success: true, data });
+
+      return ResponseData.ok(res, data)
+
     } catch (err: any) {
-      res.status(500).json({ success: false, message: err.message || "Terjadi kesalahan" });
+      return ResponseData.serverError(res, err)
     }
   },
 
-  // ==================== Other Controller Functions ====================
   async getAllFound(req: Request, res: Response) {
     try {
+
       const reports = await foundService.getAllFound();
-      res.json({ success: true, data: reports });
+
+      return ResponseData.ok(res, reports);
+
     } catch (err: any) {
-      res.status(500).json({ success: false, message: err.message || "Terjadi kesalahan" });
+      return ResponseData.serverError(res, err)
     }
   },
 
   async getFoundById(req: Request, res: Response) {
     try {
       const id = Number(req.params.id);
+
       const report = await foundService.getFoundById(id);
-      if (!report) return res.status(404).json({ success: false, message: "Laporan tidak ditemukan" });
-      res.json({ success: true, data: report });
+
+      if (!report) return ResponseData.notFound(res, "laporan tidak ditemukan")
+
+      return ResponseData.ok(res, report);
+
     } catch (err: any) {
-      res.status(500).json({ success: false, message: err.message || "Terjadi kesalahan" });
+      return ResponseData.serverError(res, err)
     }
   },
 
   async updateFound(req: AuthRequest, res: Response) {
     try {
       const id = Number(req.params.id);
+
       const updated = await foundService.updateFound(id, req.body);
-      res.json({ success: true, message: "Laporan diperbarui", data: updated });
+
+      return ResponseData.ok(res, updated, "laporan berhasil diperbarui")
+
     } catch (err: any) {
-      res.status(500).json({ success: false, message: err.message || "Terjadi kesalahan" });
+      return ResponseData.serverError(res, err)
     }
   },
 
   async updateFoundStatus(req: AuthRequest, res: Response) {
     try {
       const id = Number(req.params.id);
+
       const { status } = req.body as { status: FoundStatusType };
+
       if (!["PENDING", "CLAIMED", "REJECTED"].includes(status)) {
-        return res.status(400).json({ success: false, message: "Status tidak valid" });
+        return ResponseData.badRequest(res, "status tidak valid");
       }
       const updated = await foundService.updateFoundStatus(id, status);
+
       res.json({ success: true, message: `Status diupdate menjadi ${status}`, data: updated });
+
     } catch (err: any) {
-      res.status(500).json({ success: false, message: err.message || "Terjadi kesalahan" });
+      return ResponseData.serverError(res, err)
     }
   },
 
   async deleteFound(req: AuthRequest, res: Response) {
+
     try {
+
       const id = Number(req.params.id);
+
       await foundService.deleteFound(id);
-      res.json({ success: true, message: "Laporan berhasil dihapus" });
+
+      return ResponseData.ok(res, "laporan berhasl dihapus");
+
     } catch (err: any) {
-      res.status(400).json({ success: false, message: err.message || "Terjadi kesalahan" });
+      return ResponseData.serverError(res, err)
     }
   },
 
   async getFoundPendingForUser(req: AuthRequest, res: Response) {
+
     try {
       const data = await foundService.getFoundPendingForUser();
-      res.json({ success: true, data });
+
+      return ResponseData.ok(res, data)
+
     } catch (err: any) {
-      res.status(500).json({ success: false, message: err.message });
+
+      return ResponseData.serverError(res, err)
     }
   },
 
   async getFoundHistoryForUser(req: AuthRequest, res: Response) {
     try {
       const data = await foundService.getFoundHistoryForUser();
-      res.json({ success: true, data });
+
+      return ResponseData.ok(res, data)
+
     } catch (err: any) {
-      res.status(500).json({ success: false, message: err.message });
+      return ResponseData.serverError(res, err)
     }
   },
 };

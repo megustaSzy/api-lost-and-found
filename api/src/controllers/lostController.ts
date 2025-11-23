@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { lostService } from "../services/lostService";
 import { saveLostReportImage } from "../services/imageService";
+import { ResponseData } from "../utils/Response";
 
 interface AuthRequest extends Request {
   user?: {
@@ -10,53 +11,49 @@ interface AuthRequest extends Request {
 }
 
 export const lostController = {
-  // Create Lost Report (user)
   async createLost(req: AuthRequest, res: Response) {
     try {
       const { namaBarang, deskripsi, lokasiHilang } = req.body;
 
       if (!namaBarang || !lokasiHilang) {
-        return res.status(400).json({
-          success: false,
-          message: "Nama barang dan lokasi wajib diisi",
-        });
+        return ResponseData.badRequest(res, "nama barang dan lokasi wajib diisi");
       }
 
-      // Buat laporan tanpa image dulu
+      // step 1: buat laporan tanpa image
       const report = await lostService.createLost(req.user!.id, {
         namaBarang,
         deskripsi: deskripsi || "",
         lokasiHilang,
-        imageUrl: undefined, // awalnya undefined
+        imageUrl: undefined,
       });
 
-      // Kalau ada file image, simpan dan update imageUrl
+      // step 2: update jika ada gambar
       if (req.file) {
         const imageUrl = await saveLostReportImage(req.file, report.id);
         report.imageUrl = imageUrl;
       }
 
-      res.status(201).json({ success: true, data: report });
-    } catch (err: any) {
-      res.status(500).json({ success: false, message: err.message });
+      return ResponseData.created(res, report, "data berhasil dibuat");
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
     }
   },
 
   async getMyLost(req: AuthRequest, res: Response) {
     try {
       const reports = await lostService.getMyLostReports(req.user!.id);
-      res.json({ success: true, data: reports });
-    } catch (err: any) {
-      res.status(500).json({ success: false, message: err.message });
+      return ResponseData.ok(res, reports);
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
     }
   },
 
   async getAllLost(req: AuthRequest, res: Response) {
     try {
       const reports = await lostService.getAllLost();
-      res.json({ success: true, data: reports });
-    } catch (err: any) {
-      res.status(500).json({ success: false, message: err.message });
+      return ResponseData.ok(res, reports);
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
     }
   },
 
@@ -64,10 +61,12 @@ export const lostController = {
     try {
       const id = Number(req.params.id);
       const report = await lostService.getLostById(id);
-      if (!report) return res.status(404).json({ success: false, message: "Data tidak ditemukan" });
-      res.json({ success: true, data: report });
-    } catch (err: any) {
-      res.status(500).json({ success: false, message: err.message });
+
+      if (!report) return ResponseData.notFound(res, "data tidak ditemukan");
+
+      return ResponseData.ok(res, report);
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
     }
   },
 
@@ -75,9 +74,9 @@ export const lostController = {
     try {
       const id = Number(req.params.id);
       const updated = await lostService.updateLostReport(id, req.user!.id, req.body);
-      res.json({ success: true, message: "Laporan berhasil diperbarui", data: updated });
-    } catch (err: any) {
-      res.status(400).json({ success: false, message: err.message });
+      return ResponseData.ok(res, updated, "laporan berhasil diperbarui");
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
     }
   },
 
@@ -85,29 +84,31 @@ export const lostController = {
     try {
       const id = Number(req.params.id);
       await lostService.deleteLostReport(id, req.user!.id);
-      res.json({ success: true, message: "Laporan berhasil dihapus" });
-    } catch (err: any) {
-      res.status(400).json({ success: false, message: err.message });
+      return ResponseData.ok(res, null, "Laporan berhasil dihapus");
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
     }
   },
 
   async updateLostStatus(req: AuthRequest, res: Response) {
     try {
-      const id = Number(req.params.id);
-      const { status } = req.body; // "APPROVED" | "REJECTED"
-
       if (req.user!.role !== "Admin") {
-        return res.status(403).json({ success: false, message: "Hanya admin yang bisa melakukan ini" });
+        return ResponseData.forbidden(res, "hanya admin yang bisa melakukan ini");
       }
 
+      const id = Number(req.params.id);
+      const { status } = req.body;
+
       const updated = await lostService.updateLostStatus(id, status);
-      res.json({
-        success: true,
-        message: `Laporan berhasil ${status === "APPROVED" ? "disetujui" : "ditolak"}`,
-        data: updated,
-      });
-    } catch (err: any) {
-      res.status(400).json({ success: false, message: err.message });
+
+      return ResponseData.ok(
+        res,
+        updated,
+        `Laporan berhasil ${status === "APPROVED" ? "disetujui" : "ditolak"}`
+      );
+
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
     }
   },
 };

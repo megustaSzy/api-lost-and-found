@@ -1,6 +1,7 @@
 import prisma from "../lib/prisma";
 import bcrypt from "bcryptjs";
 import jwt, { Secret } from "jsonwebtoken";
+import { AuthData } from "../types/auth";
 
 // Ambil dari .env
 const JWT_SECRET: Secret = process.env.JWT_SECRET as string;
@@ -8,18 +9,14 @@ const JWT_REFRESH_SECRET: Secret = process.env.JWT_REFRESH_SECRET as string;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
 
-interface UserData {
-  name: string;
-  email: string;
-  password: string;
-  role: "Admin" | "User";
-  notelp: string;
-}
+
 
 export const authService = {
   // REGISTER
-  async registerUser(data: UserData) {
+  async registerUser(data: AuthData) {
+
     const existingUser = await prisma.tb_user.findUnique({ where: { email: data.email } });
+
     if (existingUser) throw new Error("Email sudah digunakan");
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
@@ -37,10 +34,13 @@ export const authService = {
 
   // LOGIN
   async loginUser(email: string, password: string) {
+
     const user = await prisma.tb_user.findUnique({ where: { email } });
+
     if (!user) throw new Error("Email tidak ditemukan");
 
     const isMatch = await bcrypt.compare(password, user.password);
+    
     if (!isMatch) throw new Error("Password salah");
 
     // Hapus refresh token lama

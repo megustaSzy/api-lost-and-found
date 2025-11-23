@@ -5,10 +5,6 @@ import { adminMiddleware } from "../middlewares/adminMiddleware";
 
 const router = Router();
 
-/* ======================
-   USER ROUTES (Protected)
-   ====================== */
-
 // 🔹 Profile user yang sedang login
 router.get("/profile", authMiddleware, userController.getProfile);
 
