@@ -1,45 +1,40 @@
 import { userService } from "../services/userService"
 import { Request, Response, NextFunction } from "express";
 import { createError } from "../utils/createError";
+import { ResponseData } from "../utils/Response";
 
 export const userController = {
     
-    async getAllUsers(req: Request, res: Response, next: NextFunction) {
+    async getAllUsers(req: Request, res: Response) {
         try {
             const users = await userService.getAllUsers();
     
-            return res.status(200).json({
-                success: true,
-                message: "Berhasil mengambil data users",
-                users
-            });
+            return ResponseData.ok(res, users, "berhasil menambah data")
 
         } catch (error) {
-            next(error);
+            return ResponseData.serverError(res, error)
         }
     },
 
-    async getUserById(req: Request, res: Response, next: NextFunction) {
+    async getUserById(req: Request, res: Response) {
         try {
             
             const id = Number(req.params.id);
     
-            if(isNaN(id)) createError("id tidak valid", 400);
+            if(isNaN(id)) return ResponseData.badRequest(res, "id tidak valid");
     
             const user = await userService.getUserById(id);
     
-            if(!user) createError("user tidak ditemukan", 404);
+            if(!user) return ResponseData.notFound(res, "id tidak ditemukan");
     
-            return res.status(200).json({
-                success: true,
-                user
-            })
+            return ResponseData.ok(res, user, "data berhasil")
+            
         } catch (error) {
-            next(error)
+            return ResponseData.serverError(res, error)
         };
     },
 
-    async editUser(req: Request, res: Response, next: NextFunction) {
+    async editUser(req: Request, res: Response) {
         try {
             const id = Number(req.params.id)
 
@@ -63,7 +58,7 @@ export const userController = {
         }
     },
 
-    async deleteUser(req: Request, res: Response, next: NextFunction) {
+    async deleteUser(req: Request, res: Response) {
         try {
             const id = Number(req.params.id);
 
