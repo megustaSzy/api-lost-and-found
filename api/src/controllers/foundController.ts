@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import { AuthRequest } from "../types/AuthRequest";
-import { foundService, FoundStatusType } from "../services/foundService";
+import { foundService } from "../services/foundService";
 import { saveFoundReportImage } from "../services/imageService";
+import { FoundStatusType } from "../types/found";
 
 export const foundController = {
-  // ==================== User Create ====================
   async createFound(req: AuthRequest, res: Response) {
     try {
       const { namaBarang, deskripsi, lokasiTemu } = req.body;
@@ -28,7 +28,6 @@ export const foundController = {
     }
   },
 
-  // ==================== Admin Create ====================
   async createAdminFoundReport(req: AuthRequest, res: Response) {
     try {
       const { namaBarang, deskripsi, lokasiTemu } = req.body;
@@ -37,13 +36,11 @@ export const foundController = {
 
       const adminId = req.user.id;
 
-      // ✅ buat report dulu tanpa image
       const report = await foundService.createdAdminFoundReport(
         { namaBarang, deskripsi, lokasiTemu },
         adminId
       );
 
-      // ✅ simpan image kalau ada
       if (req.file) {
         const imageUrl = await saveFoundReportImage(req.file, report.id);
 
@@ -64,8 +61,6 @@ export const foundController = {
     }
   },
 
-
-  // ==================== Admin Get Reports ====================
   async getAdminFoundReports(req: AuthRequest, res: Response) {
     try {
       const data = await foundService.getAdminFoundReport();
@@ -75,7 +70,6 @@ export const foundController = {
     }
   },
 
-  // ==================== Other Controller Functions ====================
   async getAllFound(req: Request, res: Response) {
     try {
       const reports = await foundService.getAllFound();

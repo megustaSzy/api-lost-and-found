@@ -3,10 +3,6 @@ import { Request, Response } from "express";
 
 export const authController = {
 
-  /** ============================
-   *  POST /register
-   *  Membuat akun baru
-   *  ============================ */
   async register(req: Request, res: Response) {
     try {
       const user = await authService.registerUser(req.body);
@@ -25,10 +21,6 @@ export const authController = {
     }
   },
 
-  /** ============================
-   *  POST /login
-   *  Login user → generate token
-   *  ============================ */
   async login(req: Request, res: Response) {
     try {
       const { email, password } = req.body;
@@ -75,10 +67,6 @@ export const authController = {
     }
   },
 
-  /** ============================
-   *  POST /refresh-token
-   *  Refresh access token baru
-   *  ============================ */
   async refreshToken(req: Request, res: Response) {
     try {
       const token = req.cookies.refreshToken;
@@ -105,10 +93,6 @@ export const authController = {
     }
   },
 
-  /** ============================
-   *  POST /logout
-   *  Hapus refresh token
-   *  ============================ */
   async logout(req: Request, res: Response) {
     try {
       const token = req.cookies.refreshToken;
