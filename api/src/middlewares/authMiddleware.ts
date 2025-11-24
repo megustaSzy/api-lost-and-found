@@ -1,15 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import prisma from "../lib/prisma";
+import { ResponseData } from "../utils/Response";
 
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   const token = req.cookies.accessToken;
 
   if (!token) {
-    return res.status(401).json({
-      message: "token tidak ditemukan",
-      success: false,
-    });
+    return ResponseData.unauthorized(res, "Token tidak ditemukan");
   }
 
   try {
@@ -21,19 +19,13 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
     });
 
     if (!user) {
-      return res.status(401).json({
-        message: "user tidak ditemukan",
-        success: false,
-      });
+      return ResponseData.unauthorized(res, "User tidak ditemukan");
     }
 
     (req as any).user = user;
     next();
 
   } catch (err) {
-    return res.status(403).json({
-      message: "token tidak valid atau expired",
-      success: false,
-    });
+    return ResponseData.forbidden(res, "Token tidak valid atau sudah expired");
   }
 };

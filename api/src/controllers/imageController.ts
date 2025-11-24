@@ -1,35 +1,51 @@
 import { Request, Response } from "express";
 import { saveLostReportImage, saveFoundReportImage } from "../services/imageService";
+import { ResponseData } from "../utils/Response";
 
-// Upload gambar lost report
-export const uploadLostReportImage = async (req: Request, res: Response) => {
-  try {
-    const file = req.file;
-    if (!file) return res.status(400).json({ message: "No file uploaded" });
+export const uploadController = {
 
-    const reportId = Number(req.params.id);
-    if (!reportId) return res.status(400).json({ message: "Report ID is required" });
+  // Upload gambar Lost Report
+  async uploadLostReportImage(req: Request, res: Response) {
+    try {
+      const file = req.file;
+      if (!file) {
+        return ResponseData.badRequest(res, "Tidak ada file yang diupload");
+      }
 
-    const imageUrl = await saveLostReportImage(file, reportId);
+      const reportId = Number(req.params.id);
+      if (!reportId) {
+        return ResponseData.badRequest(res, "Report ID wajib diisi");
+      }
 
-    return res.json({ message: "Lost report image uploaded", imageUrl });
-  } catch (err: any) {
-    return res.status(500).json({ message: "Upload failed", error: err.message });
-  }
-};
+      const imageUrl = await saveLostReportImage(file, reportId);
 
-// Upload gambar found report
-export const uploadFoundReportImage = async (req: Request, res: Response) => {
-  try {
-    const file = req.file;
-    if (!file) return res.status(400).json({ message: "No file uploaded" });
+      return ResponseData.ok(res, { imageUrl }, "Gambar lost report berhasil diupload");
 
-    const reportId = Number(req.params.id);
-    if (!reportId) return res.status(400).json({ message: "Report ID is required" });
+    } catch (err: any) {
+      return ResponseData.serverError(res, err.message);
+    }
+  },
 
-    const imageUrl = await saveFoundReportImage(file as Express.Multer.File, reportId);
-    return res.json({ message: "Found report image uploaded", imageUrl });
-  } catch (err: any) {
-    return res.status(500).json({ message: "Upload failed", error: err.message });
-  }
+  // Upload gambar Found Report
+  async uploadFoundReportImage(req: Request, res: Response) {
+    try {
+      const file = req.file;
+      if (!file) {
+        return ResponseData.badRequest(res, "Tidak ada file yang diupload");
+      }
+
+      const reportId = Number(req.params.id);
+      if (!reportId) {
+        return ResponseData.badRequest(res, "Report ID wajib diisi");
+      }
+
+      const imageUrl = await saveFoundReportImage(file, reportId);
+
+      return ResponseData.ok(res, { imageUrl }, "Gambar found report berhasil diupload");
+
+    } catch (err: any) {
+      return ResponseData.serverError(res, err.message);
+    }
+  },
+
 };
