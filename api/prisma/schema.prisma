@@ -35,8 +35,18 @@ model tb_user {
   updatedAt    DateTime         @updatedAt
 
   lostReports  tb_lostReport[]
+  accessToken  tb_accessToken[]
   refreshToken tb_refreshToken[]
   foundReports tb_foundReports[] // relasi jika admin buat laporan
+}
+
+model tb_accessToken {
+  id        Int       @id @default(autoincrement())
+  token     String    @unique
+  user      tb_user   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
 }
 
 model tb_refreshToken {

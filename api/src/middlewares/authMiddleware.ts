@@ -3,10 +3,6 @@ import jwt from "jsonwebtoken";
 import prisma from "../lib/prisma";
 import { ResponseData } from "../utils/Response";
 
-interface JwtPayload {
-  id: number;
-}
-
 export const authMiddleware = async (
   req: Request,
   res: Response,
@@ -14,45 +10,50 @@ export const authMiddleware = async (
 ) => {
   const authHeader = req.headers.authorization;
 
-  // 1. Cek header Authorization
-  if (!authHeader) {
-    return ResponseData.unauthorized(
-      res,
-      "Authorization header tidak ditemukan"
-    );
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return ResponseData.unauthorized(res, "token tidak ditemukan");
   }
 
-  // 2. Cek format Bearer
-  const [type, token] = authHeader.split(" ");
-
-  if (type !== "Bearer" || !token) {
-    return ResponseData.unauthorized(res, "Format token tidak valid");
-  }
+  const token = authHeader.split(" ")[1];
 
   try {
-    // 3. Verify JWT
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      id: number;
+      tokenId: string;
+    };
 
-    // 4. Ambil user dari database
+    // cek apakah tokenId masih ada (belum logout)
+    const tokenExists = await prisma.tb_accessToken.findUnique({
+      where: { token: decoded.tokenId },
+    });
+
+    if (!tokenExists) {
+      return ResponseData.forbidden(
+        res,
+        "token sudah tidak valid (sudah logout)"
+      );
+    }
+
+    // ambil data user
     const user = await prisma.tb_user.findUnique({
       where: { id: decoded.id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-      },
+      select: { id: true, name: true, email: true, role: true, avatar: true },
     });
 
     if (!user) {
-      return ResponseData.unauthorized(res, "User tidak ditemukan");
+      return ResponseData.notFound(res, "user tidak ditemukan");
     }
 
-    // 5. Inject user ke request
     (req as any).user = user;
+    return next();
+  } catch (err: any) {
+    if (err.name === "TokenExpiredError") {
+      return ResponseData.unauthorized(
+        res,
+        "token expired, silakan login kembali"
+      );
+    }
 
-    next();
-  } catch (error) {
-    return ResponseData.forbidden(res, "Token tidak valid atau sudah expired");
+    return ResponseData.forbidden(res, "token tidak valid");
   }
 };

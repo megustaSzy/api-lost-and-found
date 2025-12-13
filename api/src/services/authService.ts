@@ -1,110 +1,170 @@
 import prisma from "../lib/prisma";
 import bcrypt from "bcryptjs";
-import jwt, { Secret } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
+import { v4 as uuidv4, validate } from "uuid";
 import { AuthData } from "../types/auth";
+import { createError } from "../utils/createError";
 
-const JWT_SECRET: Secret = process.env.JWT_SECRET as string;
-const JWT_REFRESH_SECRET: Secret = process.env.JWT_REFRESH_SECRET as string;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
-const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
+const JWT_SECRET = process.env.JWT_SECRET!;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET!;
 
 export const authService = {
-
   async registerUser(data: AuthData) {
+    if (!data.name) throw createError("nama wajib diisi", 409);
+    if (!data.email) throw createError("email wajib diisi", 400);
+    if (!data.email.includes("@"))
+      throw createError("format email tidak valid", 400);
+    if (!data.password || data.password.length < 6)
+      throw createError("password minimal 6 karakter", 400);
 
-    const existingUser = await prisma.tb_user.findUnique({
-      where: { email: data.email }
+    const existing = await prisma.tb_user.findUnique({
+      where: { email: data.email },
     });
 
-    if (existingUser) throw new Error("Email sudah digunakan");
+    if (existing) throw createError("email sudah digunakan", 409);
 
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const hash = await bcrypt.hash(data.password, 10);
 
     return prisma.tb_user.create({
       data: {
         name: data.name,
         email: data.email,
-        password: hashedPassword,
+        password: hash,
         role: data.role || "User",
-        notelp: data.notelp || ""
-      }
+        notelp: data.notelp || "",
+      },
     });
   },
 
-  async loginUser(email: string, password: string) {
+  async createTokens(userId: number) {
+    const user = await prisma.tb_user.findFirst({
+      where: {
+        id: userId,
+      },
+      select: {
+        name: true,
+        email: true,
+      },
+    });
 
-    const user = await prisma.tb_user.findUnique({ where: { email } });
-    if (!user) throw new Error("Email tidak ditemukan");
+    if (!user) throw createError("user tidak ditemukan", 404);
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) throw new Error("Password salah");
+    const accessTokenId = uuidv4();
+    const refreshTokenId = uuidv4();
 
-    // Hapus refresh token lama
-    await prisma.tb_refreshToken.deleteMany({ where: { userId: user.id } });
-
-    const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+    // access token 1 jam
+    const accessToken = jwt.sign(
+      {
+        id: userId,
+        name: user.name,
+        email: user.email,
+        tokenId: accessTokenId,
+      }, // add name, email
       JWT_SECRET,
-      { expiresIn: parseJWTExpiry(JWT_EXPIRES_IN) }
+      { expiresIn: "1h" }
     );
 
+    await prisma.tb_accessToken.create({
+      data: {
+        token: accessToken,
+        tokenId: accessTokenId,
+        userId,
+        expiresAt: new Date(Date.now() + 1 * 60 * 60 * 1000),
+      },
+    });
+
+    // refresh token 7 hari
     const refreshToken = jwt.sign(
-      { id: user.id },
+      {
+        id: userId,
+        name: user.email,
+        email: user.email,
+        tokenId: refreshTokenId,
+      },
       JWT_REFRESH_SECRET,
-      { expiresIn: parseJWTExpiry(JWT_REFRESH_EXPIRES_IN) }
+      { expiresIn: "7d" }
     );
 
-    // Simpan refresh token ke DB
     await prisma.tb_refreshToken.create({
       data: {
         token: refreshToken,
-        userId: user.id,
-        expiresAt: new Date(Date.now() + parseExpiryToMs(JWT_REFRESH_EXPIRES_IN))
-      }
+        tokenId: refreshTokenId,
+        userId,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
     });
 
+    return { accessToken, refreshToken };
+  },
+
+  async loginUser(email: string, password: string) {
+    const user = await prisma.tb_user.findUnique({ where: { email } });
+    if (!user) throw createError("email tidak ditemukan", 404);
+
+    const isMatch = await bcrypt.compare(password, user.password!);
+    if (!isMatch) throw createError("password salah", 400);
+
+    // hapus semua sisa token user
+    await prisma.tb_accessToken.deleteMany({ where: { userId: user.id } });
+    await prisma.tb_refreshToken.deleteMany({ where: { userId: user.id } });
+
+    // buat token baru
+    const { accessToken, refreshToken } = await this.createTokens(user.id);
+
     const { password: _, ...safeUser } = user;
-    return { user: safeUser, token, refreshToken };
+    return { user: safeUser, accessToken, refreshToken };
   },
 
   async refreshAccessToken(refreshToken: string) {
     let payload: any;
-
     try {
       payload = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
     } catch {
-      throw new Error("Refresh token invalid atau expired");
+      throw createError("refresh token tidak valid", 401);
     }
 
-    const user = await prisma.tb_user.findUnique({ where: { id: payload.id } });
-    if (!user) throw new Error("User tidak ditemukan");
+    const stored = await prisma.tb_refreshToken.findUnique({
+      where: { token: payload.tokenId },
+    });
 
-    return jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+    if (!stored) throw createError("refresh token tidak terdaftar", 401);
+    if (stored.expiresAt < new Date())
+      throw createError("refresh token kadaluarsa", 401);
+
+    // generate access token baru
+    const newAccessTokenId = uuidv4();
+    const newAccessToken = jwt.sign(
+      { id: payload.id, tokenId: newAccessTokenId },
       JWT_SECRET,
-      { expiresIn: parseJWTExpiry(JWT_EXPIRES_IN) }
+      { expiresIn: "1h" }
     );
+
+    await prisma.tb_accessToken.create({
+      data: {
+        token: newAccessToken,
+        tokenId: newAccessTokenId,
+        userId: payload.id,
+        expiresAt: new Date(Date.now() + 1 * 60 * 60 * 1000),
+      },
+    });
+
+    return newAccessToken;
   },
 
   async logoutUser(refreshToken: string) {
-    await prisma.tb_refreshToken.deleteMany({
-      where: { token: refreshToken }
-    });
-  }
+    try {
+      const payload: any = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
+
+      // hapus semua token milik user
+      await prisma.tb_accessToken.deleteMany({ where: { userId: payload.id } });
+
+      await prisma.tb_refreshToken.deleteMany({
+        where: { userId: payload.id },
+      });
+    } catch {
+      // abaikan token invalid
+    }
+
+    return "logout berhasil";
+  },
 };
-
-function parseJWTExpiry(exp: string): number {
-  const n = parseInt(exp);
-  if (exp.endsWith("d")) return n * 86400;
-  if (exp.endsWith("h")) return n * 3600;
-  if (exp.endsWith("m")) return n * 60;
-  return n;
-}
-
-function parseExpiryToMs(exp: string): number {
-  const n = parseInt(exp);
-  if (exp.endsWith("d")) return n * 86400000;
-  if (exp.endsWith("h")) return n * 3600000;
-  if (exp.endsWith("m")) return n * 60000;
-  return n * 1000;
-}
