@@ -2,6 +2,7 @@ import prisma from "../lib/prisma";
 import bcrypt from "bcryptjs";
 import jwt, { Secret } from "jsonwebtoken";
 import { AuthData } from "../types/auth";
+import { createError } from "../utils/createError";
 
 const JWT_SECRET: Secret = process.env.JWT_SECRET as string;
 const JWT_REFRESH_SECRET: Secret = process.env.JWT_REFRESH_SECRET as string;
@@ -9,14 +10,12 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
 
 export const authService = {
-
   async registerUser(data: AuthData) {
-
     const existingUser = await prisma.tb_user.findUnique({
-      where: { email: data.email }
+      where: { email: data.email },
     });
 
-    if (existingUser) throw new Error("Email sudah digunakan");
+    if (existingUser) throw createError("Email sudah digunakan", 404);
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
@@ -26,45 +25,52 @@ export const authService = {
         email: data.email,
         password: hashedPassword,
         role: data.role || "User",
-        notelp: data.notelp || ""
-      }
+        notelp: data.notelp || "",
+      },
     });
   },
 
   async loginUser(email: string, password: string) {
+    const user = await prisma.tb_user.findUnique({
+      where: { email },
+    });
 
-    const user = await prisma.tb_user.findUnique({ where: { email } });
-    if (!user) throw new Error("Email tidak ditemukan");
+    if (!user) throw createError("Email tidak ditemukan", 404);
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) throw new Error("Password salah");
-
-    // Hapus refresh token lama
-    await prisma.tb_refreshToken.deleteMany({ where: { userId: user.id } });
+    if (!isMatch) throw createError("Password salah", 401);
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
       JWT_SECRET,
       { expiresIn: parseJWTExpiry(JWT_EXPIRES_IN) }
     );
 
-    const refreshToken = jwt.sign(
-      { id: user.id },
-      JWT_REFRESH_SECRET,
-      { expiresIn: parseJWTExpiry(JWT_REFRESH_EXPIRES_IN) }
-    );
+    const refreshToken = jwt.sign({ id: user.id }, JWT_REFRESH_SECRET, {
+      expiresIn: parseJWTExpiry(JWT_REFRESH_EXPIRES_IN),
+    });
 
-    // Simpan refresh token ke DB
     await prisma.tb_refreshToken.create({
       data: {
         token: refreshToken,
         userId: user.id,
-        expiresAt: new Date(Date.now() + parseExpiryToMs(JWT_REFRESH_EXPIRES_IN))
-      }
+        expiresAt: new Date(
+          Date.now() + parseExpiryToMs(JWT_REFRESH_EXPIRES_IN)
+        ),
+      },
     });
 
     const { password: _, ...safeUser } = user;
-    return { user: safeUser, token, refreshToken };
+
+    return {
+      user: safeUser,
+      token,
+      refreshToken,
+    };
   },
 
   async refreshAccessToken(refreshToken: string) {
@@ -72,15 +78,22 @@ export const authService = {
 
     try {
       payload = jwt.verify(refreshToken, JWT_REFRESH_SECRET);
-    } catch {
-      throw new Error("Refresh token invalid atau expired");
+    } catch (error) {
+      throw createError("Refresh token tidak valid", 403);
     }
 
-    const user = await prisma.tb_user.findUnique({ where: { id: payload.id } });
-    if (!user) throw new Error("User tidak ditemukan");
+    const user = await prisma.tb_user.findUnique({
+      where: { id: payload.id },
+    });
+
+    if (!user) throw createError("User tidak ditemukan", 404);
 
     return jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
       JWT_SECRET,
       { expiresIn: parseJWTExpiry(JWT_EXPIRES_IN) }
     );
@@ -88,9 +101,9 @@ export const authService = {
 
   async logoutUser(refreshToken: string) {
     await prisma.tb_refreshToken.deleteMany({
-      where: { token: refreshToken }
+      where: { token: refreshToken },
     });
-  }
+  },
 };
 
 function parseJWTExpiry(exp: string): number {

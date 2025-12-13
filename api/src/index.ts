@@ -3,6 +3,8 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
 
+import { requestLogger } from "./middlewares/logger";
+
 dotenv.config();
 
 import express from "express";
@@ -17,6 +19,8 @@ import { errorHandler } from "./middlewares/errorHandler";
 const app = express();
 
 app.use(express.json());
+
+app.use(requestLogger);
 
 app.use(cors({
   origin: true,
@@ -36,6 +40,6 @@ app.use("/api/found", foundRoute);
 app.use("/api/image", imageRoute); // upload gambar
 app.use("/api/count", countRoute);
 
-app.use(errorHandler);
+
 
 export default app;
