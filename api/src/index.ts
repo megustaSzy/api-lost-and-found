@@ -1,7 +1,6 @@
 import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import path from "path";
 
 import { requestLogger } from "./middlewares/logger";
 
@@ -12,7 +11,6 @@ import userRoute from "./routes/userRoute";
 import authRoute from "./routes/authRoute";
 import lostRoute from "./routes/lostRoute";
 import foundRoute from "./routes/foundRoute";
-import imageRoute from "./routes/imageRoute";
 import countRoute from "./routes/countRoute";
 import { errorHandler } from "./middlewares/errorHandler";
 
@@ -29,17 +27,20 @@ app.use(cors({
 
 app.use(cookieParser());
 
-// Serve folder uploads agar bisa diakses
-app.use("/uploads", express.static(path.join(process.cwd(), "public/uploads")));
+app.get("/", (req, res) => {
+  res.json({
+    status: 200,
+    message: "SERVER API IS RUNNING",
+  })
+});
 
 // API routes
 app.use("/api/users", userRoute);
 app.use("/api/auth", authRoute);
 app.use("/api/lost", lostRoute);
 app.use("/api/found", foundRoute);
-app.use("/api/image", imageRoute); // upload gambar
 app.use("/api/count", countRoute);
 
-// console.log(process.env.JWT_EXPIRES_IN);
+app.use("/uploads", express.static("public/uploads"));
 
 export default app;

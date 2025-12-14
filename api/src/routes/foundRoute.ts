@@ -3,12 +3,12 @@ import multer from "multer";
 import { foundController } from "../controllers/foundController";
 import { authMiddleware } from "../middlewares/authMiddleware";
 import { authorizeRoles } from "../middlewares/roleMiddleware";
+import { upload } from "../middlewares/uploadMiddleware";
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() }); // simpan di memory dulu
 
 // POST /api/found → admin + upload image optional
-router.post("/", authMiddleware, authorizeRoles("Admin"), upload.single("image"), foundController.createFound);
+// router.post("/", authMiddleware, authorizeRoles("Admin"), upload.single("image"), foundController.createFound);
 
 // GET /api/found/user/pending
 router.get("/user/pending", authMiddleware, foundController.getFoundPendingForUser);

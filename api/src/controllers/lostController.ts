@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { lostService } from "../services/lostService";
-import { saveLostReportImage } from "../services/imageService";
 import { ResponseData } from "../utils/Response";
 
 interface AuthRequest extends Request {
@@ -16,29 +15,23 @@ export const lostController = {
       const { namaBarang, deskripsi, lokasiHilang } = req.body;
 
       if (!namaBarang || !lokasiHilang) {
-        return ResponseData.badRequest(res, "nama barang dan lokasi wajib diisi");
+        return ResponseData.badRequest(
+          res,
+          "nama barang dan lokasi wajib diisi"
+        );
       }
 
-      // step 1: buat laporan tanpa image
       const report = await lostService.createLost(req.user!.id, {
         namaBarang,
         deskripsi: deskripsi || "",
         lokasiHilang,
-        imageUrl: undefined,
       });
-
-      // step 2: update jika ada gambar
-      if (req.file) {
-        const imageUrl = await saveLostReportImage(req.file, report.id);
-        report.imageUrl = imageUrl;
-      }
 
       return ResponseData.created(res, report, "data berhasil dibuat");
     } catch (error: any) {
       return ResponseData.serverError(res, error.message);
     }
   },
-
   async getMyLost(req: AuthRequest, res: Response) {
     try {
       const reports = await lostService.getMyLostReports(req.user!.id);
@@ -73,7 +66,11 @@ export const lostController = {
   async updateLost(req: AuthRequest, res: Response) {
     try {
       const id = Number(req.params.id);
-      const updated = await lostService.updateLostReport(id, req.user!.id, req.body);
+      const updated = await lostService.updateLostReport(
+        id,
+        req.user!.id,
+        req.body
+      );
       return ResponseData.ok(res, updated, "laporan berhasil diperbarui");
     } catch (error: any) {
       return ResponseData.serverError(res, error.message);
@@ -93,7 +90,10 @@ export const lostController = {
   async updateLostStatus(req: AuthRequest, res: Response) {
     try {
       if (req.user!.role !== "Admin") {
-        return ResponseData.forbidden(res, "hanya admin yang bisa melakukan ini");
+        return ResponseData.forbidden(
+          res,
+          "hanya admin yang bisa melakukan ini"
+        );
       }
 
       const id = Number(req.params.id);
@@ -106,7 +106,6 @@ export const lostController = {
         updated,
         `Laporan berhasil ${status === "APPROVED" ? "disetujui" : "ditolak"}`
       );
-
     } catch (error: any) {
       return ResponseData.serverError(res, error.message);
     }
