@@ -22,8 +22,8 @@ export const foundController = {
       }
 
       return ResponseData.created(res, report, "laporan berhasil dibuat");
-    } catch (err: any) {
-      return ResponseData.serverError(res, err.message);
+    } catch (error) {
+      return ResponseData.serverError(res, error);
     }
   },
 
@@ -52,8 +52,8 @@ export const foundController = {
       }
 
       return ResponseData.created(res, report, "laporan berhasil ditambahkan");
-    } catch (err: any) {
-      return ResponseData.serverError(res, err.message);
+    } catch (error) {
+      return ResponseData.serverError(res, error);
     }
   },
 
@@ -61,8 +61,8 @@ export const foundController = {
     try {
       const data = await foundService.getAdminFoundReport();
       return ResponseData.ok(res, data);
-    } catch (err: any) {
-      return ResponseData.serverError(res, err.message);
+    } catch (error) {
+      return ResponseData.serverError(res, error);
     }
   },
 
@@ -70,8 +70,8 @@ export const foundController = {
     try {
       const reports = await foundService.getAllFound();
       return ResponseData.ok(res, reports);
-    } catch (err: any) {
-      return ResponseData.serverError(res, err.message);
+    } catch (error) {
+      return ResponseData.serverError(res, error);
     }
   },
 
@@ -82,8 +82,8 @@ export const foundController = {
       if (!report) return ResponseData.notFound(res, "laporan tidak ditemukan");
 
       return ResponseData.ok(res, report);
-    } catch (err: any) {
-      return ResponseData.serverError(res, err.message);
+    } catch (error) {
+      return ResponseData.serverError(res, error);
     }
   },
 
@@ -91,8 +91,8 @@ export const foundController = {
     try {
       const updated = await foundService.updateFound(Number(req.params.id), req.body);
       return ResponseData.ok(res, updated, "laporan berhasil diperbarui");
-    } catch (err: any) {
-      return ResponseData.serverError(res, err.message);
+    } catch (error) {
+      return ResponseData.serverError(res, error);
     }
   },
 
@@ -107,8 +107,8 @@ export const foundController = {
       const updated = await foundService.updateFoundStatus(Number(req.params.id), status);
 
       return ResponseData.ok(res, updated, `status berhasil diupdate`);
-    } catch (err: any) {
-      return ResponseData.serverError(res, err.message);
+    } catch (error) {
+      return ResponseData.serverError(res, error);
     }
   },
 
@@ -116,8 +116,8 @@ export const foundController = {
     try {
       await foundService.deleteFound(Number(req.params.id));
       return ResponseData.ok(res, null, "laporan berhasil dihapus");
-    } catch (err: any) {
-      return ResponseData.serverError(res, err.message);
+    } catch (error) {
+      return ResponseData.serverError(res, error);
     }
   },
 
@@ -125,8 +125,8 @@ export const foundController = {
     try {
       const data = await foundService.getFoundPendingForUser();
       return ResponseData.ok(res, data);
-    } catch (err: any) {
-      return ResponseData.serverError(res, err.message);
+    } catch (error) {
+      return ResponseData.serverError(res, error);
     }
   },
 
@@ -134,8 +134,8 @@ export const foundController = {
     try {
       const data = await foundService.getFoundHistoryForUser();
       return ResponseData.ok(res, data);
-    } catch (err: any) {
-      return ResponseData.serverError(res, err.message);
+    } catch (error) {
+      return ResponseData.serverError(res, error);
     }
   },
 };
