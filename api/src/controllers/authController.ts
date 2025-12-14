@@ -3,13 +3,11 @@ import { authService } from "../services/authService";
 import { ResponseData } from "../utils/Response";
 
 export const authController = {
-
   async register(req: Request, res: Response) {
     try {
       const user = await authService.registerUser(req.body);
 
       return ResponseData.created(res, user, "Berhasil membuat akun");
-
     } catch (error: any) {
       return ResponseData.badRequest(res, error.message);
     }
@@ -23,48 +21,55 @@ export const authController = {
         return ResponseData.badRequest(res, "Email dan password wajib diisi");
       }
 
-      const { user, token, refreshToken } = await authService.loginUser(email, password);
+      const { user, token, refreshToken } = await authService.loginUser(
+        email,
+        password
+      );
 
-      // Set cookie access token
+      //
       res.cookie("accessToken", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
-        maxAge: 10 * 60 * 1000,
+        maxAge: 30 * 60 * 1000, // 30 menit
       });
 
-      // Set cookie refresh token
+     
       res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
-        maxAge: 1 * 60 * 1000,
+        maxAge: 1 * 24 * 60 * 60 * 1000, // 1 hari
       });
 
-      return ResponseData.ok(res, { user, token, refreshToken }, "Login berhasil");
-
+      return ResponseData.ok(res, { user }, "Login berhasil");
     } catch (error: any) {
       return ResponseData.unauthorized(res, error.message);
     }
   },
-
   async refreshToken(req: Request, res: Response) {
     try {
-      const token = req.cookies.refreshToken;
+      const refreshToken = req.cookies.refreshToken;
 
-      if (!token) {
+      if (!refreshToken) {
         return ResponseData.unauthorized(res, "Refresh token tidak ditemukan");
       }
 
-      const newAccessToken = await authService.refreshAccessToken(token);
+      const newAccessToken = await authService.refreshAccessToken(refreshToken);
 
-      return ResponseData.ok(res, { token: newAccessToken });
+      // Set ulang access token (30 menit)
+      res.cookie("accessToken", newAccessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 30 * 60 * 1000, // 30 menit
+      });
 
+      return ResponseData.ok(res, null, "Access token diperbarui");
     } catch (error: any) {
       return ResponseData.unauthorized(res, error.message);
     }
   },
-
   async logout(req: Request, res: Response) {
     try {
       const token = req.cookies.refreshToken;
@@ -77,10 +82,8 @@ export const authController = {
       res.clearCookie("accessToken");
 
       return ResponseData.ok(res, null, "Logout berhasil");
-
     } catch (error: any) {
       return ResponseData.serverError(res, error.message);
     }
   },
-
 };
