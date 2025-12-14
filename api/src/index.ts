@@ -40,6 +40,6 @@ app.use("/api/found", foundRoute);
 app.use("/api/image", imageRoute); // upload gambar
 app.use("/api/count", countRoute);
 
-
+// console.log(process.env.JWT_EXPIRES_IN);
 
 export default app;

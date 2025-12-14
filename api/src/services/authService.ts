@@ -6,8 +6,9 @@ import { createError } from "../utils/createError";
 
 const JWT_SECRET: Secret = process.env.JWT_SECRET as string;
 const JWT_REFRESH_SECRET: Secret = process.env.JWT_REFRESH_SECRET as string;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
-const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "7d";
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "30m";
+const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "1d";
+
 
 export const authService = {
   async registerUser(data: AuthData) {
@@ -29,6 +30,7 @@ export const authService = {
       },
     });
   },
+
 
   async loginUser(email: string, password: string) {
     const user = await prisma.tb_user.findUnique({
