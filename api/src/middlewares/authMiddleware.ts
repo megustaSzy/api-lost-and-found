@@ -8,14 +8,17 @@ export const authMiddleware = async (
   res: Response,
   next: NextFunction
 ) => {
-  const token = req.cookies.accessToken;
+  console.log("COOKIES:", req.cookies);
+  console.log("TOKEN:", req.cookies?.accessToken);
+
+  const token = req.cookies?.accessToken;
 
   if (!token) {
-    return ResponseData.unauthorized(res, "token tidak ditemukan");
+    return ResponseData.unauthorized(res, "Access token tidak ditemukan");
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
       id: number;
     };
 
@@ -30,7 +33,10 @@ export const authMiddleware = async (
 
     (req as any).user = user;
     next();
-  } catch (err) {
-    return ResponseData.forbidden(res, "Token tidak valid atau sudah expired");
+  } catch (error) {
+    return ResponseData.unauthorized(
+      res,
+      "Token tidak valid atau sudah expired"
+    );
   }
 };
