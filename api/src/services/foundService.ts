@@ -15,13 +15,14 @@ export const foundService = {
     });
   },
 
-  async createdAdminFoundReport(data: FoundData, adminId: number) {
+  async createdAdminFound(data: FoundData, adminId: number) {
     return prisma.tb_foundReports.create({
       data: {
         namaBarang: data.namaBarang,
         deskripsi: data.deskripsi,
         lokasiTemu: data.lokasiTemu,
         imageUrl: data.imageUrl || null,
+        imagePublicId: data.imagePublicId,
         createdByAdmin: true,
         adminId,
         lostReportId: null,
