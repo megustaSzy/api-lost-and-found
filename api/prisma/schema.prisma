@@ -79,6 +79,7 @@ model tb_foundReports {
   deskripsi      String
   lokasiTemu     String
   imageUrl       String?
+  imagePublicId  String?
   createdAt      DateTime        @default(now())
 
   statusFound    FoundStatus     @default(PENDING)
