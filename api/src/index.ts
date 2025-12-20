@@ -12,7 +12,6 @@ import authRoute from "./routes/authRoute";
 import lostRoute from "./routes/lostRoute";
 import foundRoute from "./routes/foundRoute";
 import countRoute from "./routes/countRoute";
-import { errorHandler } from "./middlewares/errorHandler";
 
 const app = express();
 
@@ -21,7 +20,7 @@ app.use(express.json());
 app.use(requestLogger);
 
 app.use(cors({
-  origin: true,
+  origin: "https://api-lost-and-found.vercel.app",
   credentials: true,
 }));
 
@@ -41,6 +40,5 @@ app.use("/api/lost", lostRoute);
 app.use("/api/found", foundRoute);
 app.use("/api/count", countRoute);
 
-app.use("/uploads", express.static("public/uploads"));
 
 export default app;
