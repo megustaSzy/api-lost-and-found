@@ -3,6 +3,7 @@ export interface FoundData {
   deskripsi: string;
   lokasiTemu: string;
   imageUrl?: string;
+  imagePublicId?: string
 }
 
 export interface FoundUpdateData extends FoundData {

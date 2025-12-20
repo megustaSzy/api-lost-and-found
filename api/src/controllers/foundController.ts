@@ -3,6 +3,7 @@ import { AuthRequest } from "../types/AuthRequest";
 import { foundService } from "../services/foundService";
 import { FoundStatusType } from "../types/found";
 import { ResponseData } from "../utils/Response";
+import { uploadToCloudinary } from "../utils/uploadToCloudinary";
 
 export const foundController = {
   async createFound(req: AuthRequest, res: Response) {
@@ -30,26 +31,24 @@ export const foundController = {
 
   async createAdminFoundReport(req: AuthRequest, res: Response) {
     try {
-      if (!req.user?.id) {
-        return ResponseData.unauthorized(res, "unauthorized");
+      if (!req.file) {
+        return ResponseData.badRequest(res, "image wajib diupload");
       }
 
-      const { namaBarang, deskripsi, lokasiTemu } = req.body;
+      const result: any = await uploadToCloudinary(req.file.buffer);
 
-      // ambil image langsung dari req.file
-      const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+      const adminId = req.user!.id; 
 
-      const report = await foundService.createdAdminFoundReport(
+      const adminCreate = await foundService.createdAdminFound(
         {
-          namaBarang,
-          deskripsi,
-          lokasiTemu,
-          imageUrl,
+          ...req.body,
+          imageUrl: result.secure_url,
+          imagePublicId: result.public_id,
         },
-        req.user.id
+        adminId 
       );
 
-      return ResponseData.created(res, report, "laporan berhasil ditambahkan");
+      return ResponseData.ok(res, adminCreate);
     } catch (error) {
       return ResponseData.serverError(res, error);
     }
