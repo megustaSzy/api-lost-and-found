@@ -20,7 +20,7 @@ app.use(express.json());
 app.use(requestLogger);
 
 app.use(cors({
-  origin: "https://api-lost-and-found.vercel.app",
+  origin: true,
   credentials: true,
 }));
 
