@@ -8,7 +8,6 @@ export const lostService = {
         namaBarang: data.namaBarang,
         deskripsi: data.deskripsi,
         lokasiHilang: data.lokasiHilang,
-        imageUrl: data.imageUrl,
         userId,
       },
     });

@@ -42,7 +42,7 @@ export const userController = {
             const currentUser = (req as any).user
             
             if (currentUser.role !== "Admin" && currentUser.id !== id) {
-                ResponseData.forbidden(res, "akses ditolak")
+                return ResponseData.forbidden(res, "akses ditolak")
             }
 
             const updateUser = await userService.updateUserById(id, req.body);
