@@ -1,5 +1,6 @@
 import prisma from "../lib/prisma";
 import { LostData } from "../types/lost";
+import { createError } from "../utils/createError";
 
 export const lostService = {
   async createLost(userId: number, data: LostData) {
@@ -8,6 +9,7 @@ export const lostService = {
         namaBarang: data.namaBarang,
         deskripsi: data.deskripsi,
         lokasiHilang: data.lokasiHilang,
+        tanggal: data.tanggal,
         userId,
       },
     });
@@ -41,22 +43,12 @@ export const lostService = {
 
   async updateLostReport(id: number, userId: number, data: LostData) {
     const existing = await prisma.tb_lostReport.findUnique({ where: { id } });
-    if (!existing) throw new Error("Laporan tidak ditemukan");
+    if (!existing) throw createError("Laporan tidak ditemukan", 404);
     if (existing.userId !== userId)
-      throw new Error("Tidak bisa mengedit laporan milik orang lain");
+      throw createError("Tidak bisa mengedit laporan milik orang lain", 400);
 
     return prisma.tb_lostReport.update({ where: { id }, data });
   },
-
-  async deleteLostReport(id: number, userId: number) {
-    const existing = await prisma.tb_lostReport.findUnique({ where: { id } });
-    if (!existing) throw new Error("Laporan tidak ditemukan");
-    if (existing.userId !== userId)
-      throw new Error("Tidak bisa menghapus laporan milik orang lain");
-
-    return prisma.tb_lostReport.delete({ where: { id } });
-  },
-
   async updateLostStatus(id: number, status: "APPROVED" | "REJECTED") {
     const existing = await prisma.tb_lostReport.findUnique({
       where: { id },
@@ -65,13 +57,13 @@ export const lostService = {
 
     if (!existing) throw new Error("Laporan tidak ditemukan");
 
-    // Jika disetujui dan belum punya foundReport → buat otomatis
     if (status === "APPROVED" && !existing.foundReport) {
       await prisma.tb_foundReports.create({
         data: {
           namaBarang: existing.namaBarang,
           deskripsi: existing.deskripsi,
           lokasiTemu: existing.lokasiHilang,
+          tanggal: existing.tanggal,
           lostReportId: existing.id,
           statusFound: "CLAIMED",
         },
@@ -82,5 +74,14 @@ export const lostService = {
       where: { id },
       data: { status },
     });
-  }
+  },
+
+  async deleteLostReport(id: number, userId: number) {
+    const existing = await prisma.tb_lostReport.findUnique({ where: { id } });
+    if (!existing) throw new Error("Laporan tidak ditemukan");
+    if (existing.userId !== userId)
+      throw new Error("Tidak bisa menghapus laporan milik orang lain");
+
+    return prisma.tb_lostReport.delete({ where: { id } });
+  },
 };

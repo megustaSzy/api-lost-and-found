@@ -8,9 +8,10 @@ export const foundService = {
         namaBarang: data.namaBarang,
         deskripsi: data.deskripsi,
         lokasiTemu: data.lokasiTemu,
+        tanggal: data.tanggal, 
         imageUrl: data.imageUrl || null,
         lostReportId: null,
-        statusFound: "PENDING",
+        statusFound: "PENDING", // 
       },
     });
   },
@@ -20,13 +21,14 @@ export const foundService = {
       data: {
         namaBarang: data.namaBarang,
         deskripsi: data.deskripsi,
-        lokasiTemu: data.lokasiTemu,
+        lokasiTemu: data.lokasiTemu, 
+        tanggal: data.tanggal, 
         imageUrl: data.imageUrl || null,
         imagePublicId: data.imagePublicId,
         createdByAdmin: true,
         adminId,
         lostReportId: null,
-        statusFound: "CLAIMED",
+        statusFound: "CLAIMED", 
       },
     });
   },
@@ -73,9 +75,10 @@ export const foundService = {
         namaBarang: data.namaBarang,
         deskripsi: data.deskripsi,
         lokasiTemu: data.lokasiTemu,
+        tanggal: data.tanggal, 
         imageUrl: data.imageUrl || null,
-        lostReportId: data.lostReportId || null,
-        statusFound: newStatus,
+        lostReportId: data.lostReportId ?? null,
+        statusFound: newStatus, 
       },
     });
   },
@@ -97,7 +100,7 @@ export const foundService = {
 
     return prisma.tb_foundReports.update({
       where: { id: foundId },
-      data: { statusFound: status },
+      data: { statusFound: status }, 
     });
   },
 
@@ -117,7 +120,7 @@ export const foundService = {
 
   async getFoundHistoryForUser() {
     return prisma.tb_foundReports.findMany({
-      where: { statusFound: "CLAIMED" },
+      where: { statusFound: "CLAIMED" }, 
       orderBy: { id: "desc" },
     });
   },
