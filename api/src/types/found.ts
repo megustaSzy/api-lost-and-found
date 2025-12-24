@@ -2,8 +2,9 @@ export interface FoundData {
   namaBarang: string;
   deskripsi: string;
   lokasiTemu: string;
+  tanggal?: string; 
   imageUrl?: string;
-  imagePublicId?: string
+  imagePublicId?: string;
 }
 
 export interface FoundUpdateData extends FoundData {
