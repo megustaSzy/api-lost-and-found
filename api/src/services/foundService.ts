@@ -1,5 +1,6 @@
 import prisma from "../lib/prisma";
 import { FoundData, FoundStatusType, FoundUpdateData } from "../types/found";
+import { createError } from "../utils/createError";
 
 export const foundService = {
   async createFound(data: FoundData) {
@@ -8,31 +9,32 @@ export const foundService = {
         namaBarang: data.namaBarang,
         deskripsi: data.deskripsi,
         lokasiTemu: data.lokasiTemu,
-        tanggal: data.tanggal, 
+        tanggal: data.tanggal,
         imageUrl: data.imageUrl || null,
         lostReportId: null,
-        statusFound: "PENDING", // 
+        statusFound: "PENDING", //
       },
     });
   },
 
   async createdAdminFound(data: FoundData, adminId: number) {
+    if (!data.tanggal) throw createError("Tanggal harus diisi", 400);
+
     return prisma.tb_foundReports.create({
       data: {
         namaBarang: data.namaBarang,
         deskripsi: data.deskripsi,
-        lokasiTemu: data.lokasiTemu, 
-        tanggal: data.tanggal, 
+        lokasiTemu: data.lokasiTemu,
+        tanggal: new Date(data.tanggal).toISOString(),
         imageUrl: data.imageUrl || null,
         imagePublicId: data.imagePublicId,
         createdByAdmin: true,
         adminId,
         lostReportId: null,
-        statusFound: "CLAIMED", 
+        statusFound: "CLAIMED",
       },
     });
   },
-
   async getAdminFoundReport() {
     return prisma.tb_foundReports.findMany({
       where: { createdByAdmin: true },
@@ -75,10 +77,10 @@ export const foundService = {
         namaBarang: data.namaBarang,
         deskripsi: data.deskripsi,
         lokasiTemu: data.lokasiTemu,
-        tanggal: data.tanggal, 
+        tanggal: data.tanggal,
         imageUrl: data.imageUrl || null,
         lostReportId: data.lostReportId ?? null,
-        statusFound: newStatus, 
+        statusFound: newStatus,
       },
     });
   },
@@ -100,7 +102,7 @@ export const foundService = {
 
     return prisma.tb_foundReports.update({
       where: { id: foundId },
-      data: { statusFound: status }, 
+      data: { statusFound: status },
     });
   },
 
@@ -120,7 +122,7 @@ export const foundService = {
 
   async getFoundHistoryForUser() {
     return prisma.tb_foundReports.findMany({
-      where: { statusFound: "CLAIMED" }, 
+      where: { statusFound: "CLAIMED" },
       orderBy: { id: "desc" },
     });
   },
