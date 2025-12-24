@@ -65,6 +65,7 @@ model tb_lostReport {
   lokasiHilang  String
   imageUrl      String?
   status        LostStatus       @default(PENDING)
+  tanggal       DateTime?
   createdAt     DateTime         @default(now())
 
   user          tb_user          @relation(fields: [userId], references: [id])
@@ -84,6 +85,7 @@ model tb_foundReports {
 
   statusFound    FoundStatus     @default(PENDING)
   createdByAdmin Boolean         @default(false)
+  tanggal        DateTime?
 
   adminId        Int?            // relasi admin pembuat laporan
   admin          tb_user?        @relation(fields: [adminId], references: [id])
