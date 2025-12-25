@@ -10,22 +10,28 @@ passport.use(
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       callbackURL: process.env.GOOGLE_REDIRECT!,
     },
-    async (
-      accessToken: string,
-      refreshToken: string,
-      profile: Profile,
-      done
-    ) => {
+    async (accessToken, refreshToken, profile, done) => {
       try {
-        // Pastikan email ada
+        console.log("\n--- [PASSPORT GOOGLE CALLBACK TRIGGERED] ---");
+        console.log("Google AccessToken exists:", !!accessToken);
+        console.log("Google RefreshToken exists:", !!refreshToken);
+        console.log("Google Profile ID:", profile.id);
+        console.log("Google Display Name:", profile.displayName);
+        console.log("Google Emails:", profile.emails);
+
         const email = profile.emails?.[0]?.value;
-        if (!email) return done(new Error("Email Google tidak ditemukan"));
+        console.log("Extracted Email:", email);
 
-        // Cari user di database
+        if (!email) {
+          console.log("❌ Email not found in Google profile!");
+          return done(new Error("Email Google tidak ditemukan"));
+        }
+
         let user = await prisma.tb_user.findUnique({ where: { email } });
+        console.log("User found in DB:", user);
 
-        // Kalau belum ada, buat baru
         if (!user) {
+          console.log("⚠ User not found, creating new user...");
           user = await prisma.tb_user.create({
             data: {
               name: profile.displayName,
@@ -37,9 +43,9 @@ passport.use(
               role: "User",
             },
           });
+          console.log("New user created:", user);
         }
 
-        // Mapping ke interface User
         const mappedUser: User = {
           id: Number(user.id),
           name: user.name,
@@ -47,8 +53,12 @@ passport.use(
           role: user.role as "Admin" | "User",
         };
 
-        return done(null, mappedUser); // aman untuk TypeScript
+        console.log("Mapped user returned to req.user:", mappedUser);
+        console.log("--- [PASSPORT DONE] ---\n");
+
+        return done(null, mappedUser);
       } catch (err) {
+        console.log("🔥 Error in Passport callback:", err);
         return done(err as any, undefined);
       }
     }
