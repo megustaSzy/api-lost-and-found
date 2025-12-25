@@ -9,7 +9,7 @@ export const lostService = {
         namaBarang: data.namaBarang,
         deskripsi: data.deskripsi,
         lokasiHilang: data.lokasiHilang,
-        tanggal: data.tanggal,
+        tanggal: data.tanggal ? new Date(data.tanggal) : null,
         userId,
       },
     });
