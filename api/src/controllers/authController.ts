@@ -42,9 +42,11 @@ export const authController = {
         return ResponseData.unauthorized(res, "Refresh token tidak ditemukan");
       }
 
-      const newAccessToken = await authService.refreshAccessToken(oldRefreshToken);
+      const newAccessToken = await authService.refreshAccessToken(
+        oldRefreshToken
+      );
 
-      setAuthCookies(res, newAccessToken, oldRefreshToken)
+      setAuthCookies(res, newAccessToken, oldRefreshToken);
 
       return ResponseData.ok(res, null, "Access token diperbarui");
     } catch (error: any) {
@@ -82,7 +84,10 @@ export const authController = {
       setAuthCookies(res, accessToken, refreshToken);
 
       // Redirect ke frontend
-      const redirectUrl = `${process.env.FRONTEND_URL}/login`;
+      const redirectUrl =
+        user.role === "Admin"
+          ? `${process.env.FRONTEND_URL}/dashboard/admin`
+          : `${process.env.FRONTEND_URL}/dashboard/user`;
       return res.redirect(redirectUrl);
     } catch (error: any) {
       return ResponseData.serverError(res, error.message);
