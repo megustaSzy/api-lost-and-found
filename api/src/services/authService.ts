@@ -149,11 +149,11 @@ export const authService = {
   },
 
   async loginWithGoogle(profile: any) {
-    if (!profile.emails || !profile.emails[0])
-      createError("Email Google tidak ditemukan", 404);
-
-    const email = profile.emails[0].value;
+    const email = profile.emails?.[0]?.value;
     const name = profile.displayName;
+    const providerId = profile.id;
+
+    if (!email) throw createError("Email Google tidak ditemukan", 404);
 
     let user = await prisma.tb_user.findUnique({ where: { email } });
 
@@ -163,7 +163,7 @@ export const authService = {
           name,
           email,
           provider: "google",
-          providerId: profile.id,
+          providerId,
           password: null,
           notelp: null,
           role: "User",
@@ -171,10 +171,9 @@ export const authService = {
       });
     }
 
-    const { accessToken, refreshToken } = await this.createTokens(user.id);
-    return { user, accessToken, refreshToken };
+    const tokens = await this.createTokens(user.id);
+    return { user, ...tokens };
   },
-
   async requestForgotPassword(email: string) {
     if (!email) throw createError("Email wajib diisi", 400);
 

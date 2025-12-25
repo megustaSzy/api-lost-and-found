@@ -28,7 +28,6 @@ passport.use(
         }
 
         let user = await prisma.tb_user.findUnique({ where: { email } });
-        console.log("User found in DB:", user);
 
         if (!user) {
           console.log("⚠ User not found, creating new user...");
