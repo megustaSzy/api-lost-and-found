@@ -1,5 +1,6 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy, Profile } from "passport-google-oauth20";
+import { convertProfileToUser } from "../utils/convertProfileToUser";
 
 passport.use(
   new GoogleStrategy(
@@ -14,9 +15,20 @@ passport.use(
       profile: Profile,
       done
     ) => {
-      return done(null, profile);
+      // convert Profile → User
+      const user = convertProfileToUser(profile, "User"); // default role User
+      return done(null, user);
     }
   )
 );
+
+passport.serializeUser((user: any, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser((id: number, done) => {
+
+  done(null, { id });
+});
 
 export default passport;
