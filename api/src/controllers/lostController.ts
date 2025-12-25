@@ -25,7 +25,7 @@ export const lostController = {
         namaBarang,
         deskripsi: deskripsi || "",
         lokasiHilang,
-        tanggal
+        tanggal: tanggal || null
       });
 
       return ResponseData.created(res, report, "data berhasil dibuat");
