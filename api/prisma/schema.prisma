@@ -46,7 +46,8 @@ model tb_user {
 
 model tb_accessToken {
   id        Int      @id @default(autoincrement())
-  token     String   @unique
+  token     String
+  tokenId   String?  @unique
   user      tb_user  @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    Int
   expiresAt DateTime
@@ -55,7 +56,8 @@ model tb_accessToken {
 
 model tb_refreshToken {
   id        Int      @id @default(autoincrement())
-  token     String   @unique
+  token     String
+  tokenId   String?  @unique
   user      tb_user  @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    Int
   expiresAt DateTime
@@ -97,4 +99,12 @@ model tb_foundReports {
   // one-to-one relationship dengan lost report
   lostReportId Int?           @unique
   lostReport   tb_lostReport? @relation("LostFoundRelation", fields: [lostReportId], references: [id])
+}
+
+model tb_otp {
+  id        Int      @id @default(autoincrement())
+  email     String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
