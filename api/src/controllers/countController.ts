@@ -15,7 +15,11 @@ export const countController = {
 
   async getUserDashboardCount(req: AuthRequest, res: Response) {
     try {
-      const data = await countService.getUserDashboardCount(req.user!.id);
+      if (!req.user) {
+        return ResponseData.unauthorized(res, "Unauthorized");
+      }
+
+      const data = await countService.getUserDashboardCount(req.user.id);
       return ResponseData.ok(res, data);
     } catch (error) {
       return ResponseData.serverError(res, error);
