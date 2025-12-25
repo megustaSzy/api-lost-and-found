@@ -1,25 +1,25 @@
-import { Request, Response } from "express";
+import { Response, Request } from "express";
 import { lostService } from "../services/lostService";
 import { ResponseData } from "../utils/Response";
 
-interface AuthRequest extends Request {
-  user?: {
-    id: number;
-    role: "Admin" | "User";
-  };
+declare global {
+  namespace Express {
+    interface User {
+      id: number;
+      role?: string;
+    }
+  }
 }
 
 export const lostController = {
-  async createLost(req: AuthRequest, res: Response) {
+  async createLost(req: Request, res: Response) {
     try {
       const { namaBarang, deskripsi, lokasiHilang } = req.body;
-
-      if (!namaBarang || !lokasiHilang) {
+      if (!namaBarang || !lokasiHilang)
         return ResponseData.badRequest(
           res,
           "nama barang dan lokasi wajib diisi"
         );
-      }
 
       const report = await lostService.createLost(req.user!.id, {
         namaBarang,
@@ -32,7 +32,8 @@ export const lostController = {
       return ResponseData.serverError(res, error.message);
     }
   },
-  async getMyLost(req: AuthRequest, res: Response) {
+
+  async getMyLost(req: Request, res: Response) {
     try {
       const reports = await lostService.getMyLostReports(req.user!.id);
       return ResponseData.ok(res, reports);
@@ -41,7 +42,7 @@ export const lostController = {
     }
   },
 
-  async getAllLost(req: AuthRequest, res: Response) {
+  async getAllLost(req: Request, res: Response) {
     try {
       const reports = await lostService.getAllLost();
       return ResponseData.ok(res, reports);
@@ -54,16 +55,14 @@ export const lostController = {
     try {
       const id = Number(req.params.id);
       const report = await lostService.getLostById(id);
-
       if (!report) return ResponseData.notFound(res, "data tidak ditemukan");
-
       return ResponseData.ok(res, report);
     } catch (error: any) {
       return ResponseData.serverError(res, error.message);
     }
   },
 
-  async updateLost(req: AuthRequest, res: Response) {
+  async updateLost(req: Request, res: Response) {
     try {
       const id = Number(req.params.id);
       const updated = await lostService.updateLostReport(
@@ -77,7 +76,7 @@ export const lostController = {
     }
   },
 
-  async deleteLost(req: AuthRequest, res: Response) {
+  async deleteLost(req: Request, res: Response) {
     try {
       const id = Number(req.params.id);
       await lostService.deleteLostReport(id, req.user!.id);
@@ -87,18 +86,16 @@ export const lostController = {
     }
   },
 
-  async updateLostStatus(req: AuthRequest, res: Response) {
+  async updateLostStatus(req: Request, res: Response) {
     try {
-      if (req.user!.role !== "Admin") {
+      if (req.user!.role !== "Admin")
         return ResponseData.forbidden(
           res,
           "hanya admin yang bisa melakukan ini"
         );
-      }
 
       const id = Number(req.params.id);
       const { status } = req.body;
-
       const updated = await lostService.updateLostStatus(id, status);
 
       return ResponseData.ok(

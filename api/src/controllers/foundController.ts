@@ -1,17 +1,16 @@
 import { Request, Response } from "express";
-import { AuthRequest } from "../types/AuthRequest";
 import { foundService } from "../services/foundService";
 import { FoundStatusType } from "../types/found";
 import { ResponseData } from "../utils/Response";
 import { uploadToCloudinary } from "../utils/uploadToCloudinary";
 
 export const foundController = {
-  async createFound(req: AuthRequest, res: Response) {
+  async createFound(req: Request, res: Response) {
     try {
       const { namaBarang, deskripsi, lokasiTemu } = req.body;
 
       if (!namaBarang || !deskripsi || !lokasiTemu) {
-        return ResponseData.badRequest(res, "semua field wajib diisi");
+        return ResponseData.badRequest(res, "Semua field wajib diisi");
       }
 
       const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
@@ -23,21 +22,21 @@ export const foundController = {
         imageUrl,
       });
 
-      return ResponseData.created(res, report, "laporan berhasil dibuat");
-    } catch (error) {
-      return ResponseData.serverError(res, error);
+      return ResponseData.created(res, report, "Laporan berhasil dibuat");
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
     }
   },
 
-  async createAdminFoundReport(req: AuthRequest, res: Response) {
+  async createAdminFoundReport(req: Request, res: Response) {
     try {
       if (!req.file) {
-        return ResponseData.badRequest(res, "image wajib diupload");
+        return ResponseData.badRequest(res, "Image wajib diupload");
       }
 
       const result: any = await uploadToCloudinary(req.file.buffer);
 
-      const adminId = req.user!.id; 
+      const adminId = req.user!.id; // req.user dijamin ada oleh middleware
 
       const adminCreate = await foundService.createdAdminFound(
         {
@@ -45,20 +44,21 @@ export const foundController = {
           imageUrl: result.secure_url,
           imagePublicId: result.public_id,
         },
-        adminId 
+        adminId
       );
 
       return ResponseData.ok(res, adminCreate);
-    } catch (error) {
-      return ResponseData.serverError(res, error);
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
     }
   },
-  async getAdminFoundReports(req: AuthRequest, res: Response) {
+
+  async getAdminFoundReports(req: Request, res: Response) {
     try {
       const data = await foundService.getAdminFoundReport();
       return ResponseData.ok(res, data);
-    } catch (error) {
-      return ResponseData.serverError(res, error);
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
     }
   },
 
@@ -66,8 +66,8 @@ export const foundController = {
     try {
       const reports = await foundService.getAllFound();
       return ResponseData.ok(res, reports);
-    } catch (error) {
-      return ResponseData.serverError(res, error);
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
     }
   },
 
@@ -75,32 +75,32 @@ export const foundController = {
     try {
       const report = await foundService.getFoundById(Number(req.params.id));
 
-      if (!report) return ResponseData.notFound(res, "laporan tidak ditemukan");
+      if (!report) return ResponseData.notFound(res, "Laporan tidak ditemukan");
 
       return ResponseData.ok(res, report);
-    } catch (error) {
-      return ResponseData.serverError(res, error);
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
     }
   },
 
-  async updateFound(req: AuthRequest, res: Response) {
+  async updateFound(req: Request, res: Response) {
     try {
       const updated = await foundService.updateFound(
         Number(req.params.id),
         req.body
       );
-      return ResponseData.ok(res, updated, "laporan berhasil diperbarui");
-    } catch (error) {
-      return ResponseData.serverError(res, error);
+      return ResponseData.ok(res, updated, "Laporan berhasil diperbarui");
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
     }
   },
 
-  async updateFoundStatus(req: AuthRequest, res: Response) {
+  async updateFoundStatus(req: Request, res: Response) {
     try {
       const { status } = req.body as { status: FoundStatusType };
 
       if (!["PENDING", "CLAIMED", "REJECTED"].includes(status)) {
-        return ResponseData.badRequest(res, "status tidak valid");
+        return ResponseData.badRequest(res, "Status tidak valid");
       }
 
       const updated = await foundService.updateFoundStatus(
@@ -108,36 +108,36 @@ export const foundController = {
         status
       );
 
-      return ResponseData.ok(res, updated, `status berhasil diupdate`);
-    } catch (error) {
-      return ResponseData.serverError(res, error);
+      return ResponseData.ok(res, updated, "Status berhasil diupdate");
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
     }
   },
 
-  async deleteFound(req: AuthRequest, res: Response) {
+  async deleteFound(req: Request, res: Response) {
     try {
       await foundService.deleteFound(Number(req.params.id));
-      return ResponseData.ok(res, null, "laporan berhasil dihapus");
-    } catch (error) {
-      return ResponseData.serverError(res, error);
+      return ResponseData.ok(res, null, "Laporan berhasil dihapus");
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
     }
   },
 
-  async getFoundPendingForUser(req: AuthRequest, res: Response) {
+  async getFoundPendingForUser(req: Request, res: Response) {
     try {
       const data = await foundService.getFoundPendingForUser();
       return ResponseData.ok(res, data);
-    } catch (error) {
-      return ResponseData.serverError(res, error);
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
     }
   },
 
-  async getFoundHistoryForUser(req: AuthRequest, res: Response) {
+  async getFoundHistoryForUser(req: Request, res: Response) {
     try {
       const data = await foundService.getFoundHistoryForUser();
       return ResponseData.ok(res, data);
-    } catch (error) {
-      return ResponseData.serverError(res, error);
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
     }
   },
 };
