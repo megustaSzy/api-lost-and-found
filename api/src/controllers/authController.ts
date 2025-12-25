@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { authService } from "../services/authService";
 import { ResponseData } from "../utils/Response";
+import { clearAuthCookies, setAuthCookies } from "../utils/cookies";
 
 export const authController = {
   async register(req: Request, res: Response) {
@@ -20,28 +21,12 @@ export const authController = {
         return ResponseData.badRequest(res, "Email dan password wajib diisi");
       }
 
-      const { user, token, refreshToken } = await authService.loginUser(
+      const { user, accessToken, refreshToken } = await authService.loginUser(
         email,
         password
       );
 
-      // ACCESS TOKEN (30 menit)
-      res.cookie("accessToken", token, {
-        httpOnly: true,
-        secure: true, // WAJIB HTTPS (Vercel)
-        sameSite: "none", // WAJIB cross-domain
-        maxAge: 30 * 60 * 1000,
-        path: "/",
-      });
-
-      // REFRESH TOKEN (1 hari)
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: 24 * 60 * 60 * 1000,
-        path: "/",
-      });
+      setAuthCookies(res, accessToken, refreshToken);
 
       return ResponseData.ok(res, { user }, "Login berhasil");
     } catch (error: any) {
@@ -51,22 +36,15 @@ export const authController = {
 
   async refreshToken(req: Request, res: Response) {
     try {
-      const refreshToken = req.cookies.refreshToken;
+      const oldRefreshToken = req.cookies.refreshToken;
 
-      if (!refreshToken) {
+      if (!oldRefreshToken) {
         return ResponseData.unauthorized(res, "Refresh token tidak ditemukan");
       }
 
-      const newAccessToken = await authService.refreshAccessToken(refreshToken);
+      const newAccessToken = await authService.refreshAccessToken(oldRefreshToken);
 
-      // SET ULANG ACCESS TOKEN
-      res.cookie("accessToken", newAccessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        maxAge: 30 * 60 * 1000,
-        path: "/",
-      });
+      setAuthCookies(res, newAccessToken, oldRefreshToken)
 
       return ResponseData.ok(res, null, "Access token diperbarui");
     } catch (error: any) {
@@ -76,27 +54,66 @@ export const authController = {
 
   async logout(req: Request, res: Response) {
     try {
-      const token = req.cookies.refreshToken;
+      const refreshToken = req.cookies.refreshToken;
 
-      if (token) {
-        await authService.logoutUser(token);
+      if (refreshToken) {
+        await authService.logoutUser(refreshToken);
       }
 
-      res.clearCookie("refreshToken", {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        path: "/",
-      });
-
-      res.clearCookie("accessToken", {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none",
-        path: "/",
-      });
+      clearAuthCookies(res);
 
       return ResponseData.ok(res, null, "Logout berhasil");
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
+    }
+  },
+
+  async googleCallback(req: Request, res: Response) {
+    try {
+      const profile = (req as any).user;
+      if (!profile) {
+        return ResponseData.unauthorized(res, "Profil Google tidak ditemukan");
+      }
+
+      const { user, accessToken, refreshToken } =
+        await authService.loginWithGoogle(profile);
+
+      // Set cookies
+      setAuthCookies(res, accessToken, refreshToken);
+
+      // Redirect ke frontend
+      const redirectUrl = `${process.env.FRONTEND_URL}/login`;
+      return res.redirect(redirectUrl);
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
+    }
+  },
+
+  async forgotPassword(req: Request, res: Response) {
+    try {
+      const { email } = req.body;
+      const result = await authService.requestForgotPassword(email);
+      return ResponseData.ok(res, result, "Link reset password telah dikirim");
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
+    }
+  },
+
+  async verifyResetSession(req: Request, res: Response) {
+    try {
+      const sessionToken = req.query.sessionToken as string;
+      const result = await authService.verifySession(sessionToken);
+      return ResponseData.ok(res, result, "Token valid");
+    } catch (error: any) {
+      return ResponseData.serverError(res, error.message);
+    }
+  },
+
+  async resetPassword(req: Request, res: Response) {
+    try {
+      const { sessionToken, newPassword } = req.body;
+      const result = await authService.resetPassword(sessionToken, newPassword);
+      return ResponseData.ok(res, result, "Password berhasil direset");
     } catch (error: any) {
       return ResponseData.serverError(res, error.message);
     }

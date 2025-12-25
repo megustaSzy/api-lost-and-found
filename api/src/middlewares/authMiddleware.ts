@@ -8,9 +8,6 @@ export const authMiddleware = async (
   res: Response,
   next: NextFunction
 ) => {
-  console.log("COOKIES:", req.cookies);
-  console.log("TOKEN:", req.cookies?.accessToken);
-
   const token = req.cookies?.accessToken;
 
   if (!token) {
@@ -32,6 +29,7 @@ export const authMiddleware = async (
     }
 
     (req as any).user = user;
+
     next();
   } catch (error) {
     return ResponseData.unauthorized(

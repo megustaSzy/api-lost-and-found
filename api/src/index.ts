@@ -1,9 +1,10 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import express, { Request, Response, NextFunction } from "express";
+import passport from "./config/passport";
 
 import { requestLogger } from "./middlewares/logger";
 
@@ -44,6 +45,7 @@ app.use(
 // Middleware parsing JSON & cookies
 app.use(express.json());
 app.use(cookieParser());
+app.use(passport.initialize())
 
 // Logger request
 app.use(requestLogger);

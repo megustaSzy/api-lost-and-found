@@ -1,10 +1,9 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import { countService } from "../services/countService";
 import { ResponseData } from "../utils/Response";
-import { AuthRequest } from "../types/AuthRequest";
 
 export const countController = {
-  async getAdminDashboardCount(req: AuthRequest, res: Response) {
+  async getAdminDashboardCount(req: Request, res: Response) {
     try {
       const data = await countService.getAdminDashboardCount();
       return ResponseData.ok(res, data, "jumlah data");
@@ -13,7 +12,7 @@ export const countController = {
     }
   },
 
-  async getUserDashboardCount(req: AuthRequest, res: Response) {
+  async getUserDashboardCount(req: Request, res: Response) {
     try {
       if (!req.user) {
         return ResponseData.unauthorized(res, "Unauthorized");
