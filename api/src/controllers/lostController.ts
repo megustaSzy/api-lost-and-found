@@ -14,7 +14,7 @@ declare global {
 export const lostController = {
   async createLost(req: Request, res: Response) {
     try {
-      const { namaBarang, deskripsi, lokasiHilang } = req.body;
+      const { namaBarang, deskripsi, lokasiHilang, tanggal } = req.body;
       if (!namaBarang || !lokasiHilang)
         return ResponseData.badRequest(
           res,
@@ -25,6 +25,7 @@ export const lostController = {
         namaBarang,
         deskripsi: deskripsi || "",
         lokasiHilang,
+        tanggal
       });
 
       return ResponseData.created(res, report, "data berhasil dibuat");
