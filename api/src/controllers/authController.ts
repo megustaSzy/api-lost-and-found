@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { authService } from "../services/authService";
 import { ResponseData } from "../utils/Response";
 import { clearAuthCookies, setAuthCookies } from "../utils/cookies";
+import { User } from "../types/user";
 
 export const authController = {
   async register(req: Request, res: Response) {
@@ -73,21 +74,20 @@ export const authController = {
   async googleCallback(req: Request, res: Response) {
     try {
       console.log("\n--- [CONTROLLER GOOGLE CALLBACK HIT] ---");
-      console.log("Full callback URL:", req.url);
-      console.log("req.user from Passport:", req.user);
+      console.log("Google Profile from req.user:", req.user);
 
-      const profile = req.user;
+      const profile = req.user as User;
       if (!profile) {
-        console.log("❌ req.user is EMPTY — Passport gagal mengisi user!");
         return ResponseData.unauthorized(res, "Profil Google tidak ditemukan");
       }
 
+      // Login atau register user via service hanya dengan email & name yang sudah ada di req.user
       const { user, accessToken, refreshToken } =
-        await authService.loginWithGoogle(profile);
-
-      console.log("User from service:", user);
-      console.log("Generated JWT AccessToken:", accessToken);
-      console.log("Generated JWT RefreshToken:", refreshToken);
+        await authService.loginWithGoogle({
+          emails: [{ value: profile.email }],
+          displayName: profile.name,
+          id: profile.id,
+        });
 
       setAuthCookies(res, accessToken, refreshToken);
 
@@ -96,12 +96,8 @@ export const authController = {
           ? `${process.env.FRONTEND_URL}/dashboard/admin`
           : `${process.env.FRONTEND_URL}/dashboard/user`;
 
-      console.log("Redirecting to FE:", redirectUrl);
-      console.log("--- [REDIRECT SENT] ---\n");
-
       return res.redirect(redirectUrl);
     } catch (error: any) {
-      console.log("🔥 Error in Controller:", error);
       return ResponseData.serverError(res, error.message);
     }
   },
