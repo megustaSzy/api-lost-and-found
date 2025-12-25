@@ -64,28 +64,4 @@ passport.use(
   )
 );
 
-// Serialisasi user ke session
-passport.serializeUser((user, done) => {
-  done(null, user.id); // id pasti number
-});
-
-// Deserialisasi user dari session
-passport.deserializeUser(async (id: number, done) => {
-  try {
-    const userFromDb = await prisma.tb_user.findUnique({ where: { id } });
-    if (!userFromDb) return done(null, undefined);
-
-    const mappedUser: User = {
-      id: Number(userFromDb.id),
-      name: userFromDb.name,
-      email: userFromDb.email,
-      role: userFromDb.role as "Admin" | "User",
-    };
-
-    done(null, mappedUser);
-  } catch (err) {
-    done(err as any, undefined);
-  }
-});
-
 export default passport;
