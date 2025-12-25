@@ -72,7 +72,7 @@ export const authController = {
 
   async googleCallback(req: Request, res: Response) {
     try {
-      const profile = (req as any).user;
+      const profile = req.user;
       if (!profile) {
         return ResponseData.unauthorized(res, "Profil Google tidak ditemukan");
       }
