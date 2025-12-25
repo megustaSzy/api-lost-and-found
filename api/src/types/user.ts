@@ -4,3 +4,9 @@ export interface User {
   email: string;
   role: "Admin" | "User";
 }
+export interface UserData {
+  name?: string;
+  email?: string;
+  password?: string;
+}
+
