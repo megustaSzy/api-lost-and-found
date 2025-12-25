@@ -61,7 +61,7 @@ app.use("/api/users", userRoute);
 app.use("/api/auth", authRoute);
 app.use("/api/lost", lostRoute);
 app.use("/api/found", foundRoute);
-app.use("/api/count", countRoute);
+app.use("/api/dashboard", countRoute);
 
 // Error handler global
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

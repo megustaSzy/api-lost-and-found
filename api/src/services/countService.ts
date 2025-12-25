@@ -1,16 +1,36 @@
-import prisma from "../lib/prisma";
+import prisma from "../lib/prisma"
 
 
 export const countService = {
-    async getCount () {
-        const lost = await prisma.tb_lostReport.count();
-        const found = await prisma.tb_foundReports.count();
-        const user = await prisma.tb_user.count();
+
+    async getAdminDashboardCount() {
+        const [lost, found, user] = await Promise.all([
+            prisma.tb_lostReport.count(),
+            prisma.tb_foundReports.count(),
+            prisma.tb_user.count(),
+        ]);
 
         return {
             lost,
             found,
             user
         }
+    },
+
+    async getUserDashboardCount(userId: number) {
+        const [myLost, found] = await Promise.all([
+            prisma.tb_lostReport.count({
+                where: {
+                    userId
+                }
+            }),
+            prisma.tb_foundReports.count(),
+        ])
+
+        return {
+            myLost,
+            found
+        }
     }
+
 }
