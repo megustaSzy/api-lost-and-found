@@ -72,28 +72,39 @@ export const authController = {
 
   async googleCallback(req: Request, res: Response) {
     try {
+      console.log("\n--- [CONTROLLER GOOGLE CALLBACK HIT] ---");
+      console.log("Full callback URL:", req.url);
+      console.log("req.user from Passport:", req.user);
+
       const profile = req.user;
       if (!profile) {
+        console.log("❌ req.user is EMPTY — Passport gagal mengisi user!");
         return ResponseData.unauthorized(res, "Profil Google tidak ditemukan");
       }
 
       const { user, accessToken, refreshToken } =
         await authService.loginWithGoogle(profile);
 
-      // Set cookies
+      console.log("User from service:", user);
+      console.log("Generated JWT AccessToken:", accessToken);
+      console.log("Generated JWT RefreshToken:", refreshToken);
+
       setAuthCookies(res, accessToken, refreshToken);
 
-      // Redirect ke frontend
       const redirectUrl =
         user.role === "Admin"
           ? `${process.env.FRONTEND_URL}/dashboard/admin`
           : `${process.env.FRONTEND_URL}/dashboard/user`;
+
+      console.log("Redirecting to FE:", redirectUrl);
+      console.log("--- [REDIRECT SENT] ---\n");
+
       return res.redirect(redirectUrl);
     } catch (error: any) {
+      console.log("🔥 Error in Controller:", error);
       return ResponseData.serverError(res, error.message);
     }
   },
-
   async forgotPassword(req: Request, res: Response) {
     try {
       const { email } = req.body;
