@@ -84,12 +84,16 @@ export const authService = {
 
   async loginUser(email: string, password: string) {
     const user = await prisma.tb_user.findUnique({ where: { email } });
-    if (!user) throw createError("Email tidak ditemukan", 404);
 
-    const isMatch = await bcrypt.compare(password, user.password!);
-    if (!isMatch) throw createError("Password salah", 400);
+    if (!user || !user.password) {
+      throw createError("Email atau password salah", 401);
+    }
 
-    // Hapus token lama
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      throw createError("Email atau password salah", 401);
+    }
+
     await prisma.tb_accessToken.deleteMany({ where: { userId: user.id } });
     await prisma.tb_refreshToken.deleteMany({ where: { userId: user.id } });
 
@@ -98,7 +102,6 @@ export const authService = {
 
     return { user: safeUser, accessToken, refreshToken };
   },
-
   async refreshAccessToken(refreshToken: string) {
     let payload: any;
     try {
