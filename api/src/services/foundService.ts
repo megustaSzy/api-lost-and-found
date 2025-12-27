@@ -1,6 +1,7 @@
 import prisma from "../lib/prisma";
 import { FoundData, FoundStatusType, FoundUpdateData } from "../types/found";
 import { createError } from "../utils/createError";
+import { Pagination } from "../utils/Pagination";
 
 export const foundService = {
   async createFound(data: FoundData) {
@@ -35,23 +36,60 @@ export const foundService = {
       },
     });
   },
-  async getAdminFoundReport() {
-    return prisma.tb_foundReports.findMany({
-      where: { createdByAdmin: true },
-      include: { admin: { select: { name: true } } },
-      orderBy: { createdAt: "desc" },
-    });
-  },
+  async getAdminFoundReport(page: number, limit: number) {
+    const pagination = new Pagination(page, limit);
 
-  async getAllFound() {
-    return prisma.tb_foundReports.findMany({
-      include: {
-        lostReport: { include: { user: true } },
-      },
-      orderBy: { id: "desc" },
-    });
-  },
+    const where = {
+      createdByAdmin: true,
+    };
 
+    const [count, rows] = await Promise.all([
+      prisma.tb_foundReports.count({ where }),
+      prisma.tb_foundReports.findMany({
+        where,
+        include: {
+          admin: {
+            select: {
+              name: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        skip: pagination.skip,
+        take: pagination.limit,
+      }),
+    ]);
+
+    return pagination.paginate({ count, rows });
+  },
+  async getAllFound(page: number, limit: number) {
+    const pagination = new Pagination(page, limit);
+
+    const where = {};
+
+    const [count, rows] = await Promise.all([
+      prisma.tb_foundReports.count({ where }),
+      prisma.tb_foundReports.findMany({
+        where,
+        include: {
+          lostReport: {
+            include: {
+              user: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc", // lebih aman dari id
+        },
+        skip: pagination.skip,
+        take: pagination.limit,
+      }),
+    ]);
+
+    return pagination.paginate({ count, rows });
+  },
   async getFoundById(id: number) {
     return prisma.tb_foundReports.findUnique({
       where: { id },

@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { foundService } from "../services/foundService";
 import { FoundStatusType } from "../types/found";
 import { ResponseData } from "../utils/Response";
@@ -53,21 +53,28 @@ export const foundController = {
     }
   },
 
-  async getAdminFoundReports(req: Request, res: Response) {
+  // get admin
+  async getAdminFoundReport(req: Request, res: Response, next: NextFunction) {
     try {
-      const data = await foundService.getAdminFoundReport();
-      return ResponseData.ok(res, data);
-    } catch (error: any) {
-      return ResponseData.serverError(res, error.message);
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
+
+      const reports = await foundService.getAdminFoundReport(page, limit);
+      return ResponseData.ok(res, reports);
+    } catch (error) {
+      next(error);
     }
   },
-
-  async getAllFound(req: Request, res: Response) {
+  // get all found
+  async getAllFound(req: Request, res: Response, next: NextFunction) {
     try {
-      const reports = await foundService.getAllFound();
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
+
+      const reports = await foundService.getAllFound(page, limit);
       return ResponseData.ok(res, reports);
-    } catch (error: any) {
-      return ResponseData.serverError(res, error.message);
+    } catch (error) {
+      next(error);
     }
   },
 
