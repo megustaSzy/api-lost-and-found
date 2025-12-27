@@ -68,8 +68,11 @@ app.use("/api/dashboard", countRoute);
 // Error handler global
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   console.error(err);
-  res.status(500).json({
-    status: 500,
+
+  const statusCode = err.statusCode || err.status || 500;
+
+  res.status(statusCode).json({
+    success: false,
     message: err.message || "Internal Server Error",
   });
 });
