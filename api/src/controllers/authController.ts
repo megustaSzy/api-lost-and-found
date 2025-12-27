@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { authService } from "../services/authService";
 import { ResponseData } from "../utils/Response";
 import { clearAuthCookies, setAuthCookies } from "../utils/cookies";
@@ -73,15 +73,11 @@ export const authController = {
 
   async googleCallback(req: Request, res: Response) {
     try {
-      console.log("\n--- [CONTROLLER GOOGLE CALLBACK HIT] ---");
-      console.log("Google Profile from req.user:", req.user);
-
       const profile = req.user as User;
       if (!profile) {
         return ResponseData.unauthorized(res, "Profil Google tidak ditemukan");
       }
 
-      // Login atau register user via service hanya dengan email & name yang sudah ada di req.user
       const { user, accessToken, refreshToken } =
         await authService.loginWithGoogle({
           emails: [{ value: profile.email }],
@@ -101,16 +97,15 @@ export const authController = {
       return ResponseData.serverError(res, error.message);
     }
   },
-  async forgotPassword(req: Request, res: Response) {
+  async forgotPassword(req: Request, res: Response, next: NextFunction) {
     try {
       const { email } = req.body;
       const result = await authService.requestForgotPassword(email);
       return ResponseData.ok(res, result, "Link reset password telah dikirim");
-    } catch (error: any) {
-      return ResponseData.serverError(res, error.message);
+    } catch (error) {
+      next(error); 
     }
   },
-
   async verifyResetSession(req: Request, res: Response) {
     try {
       const sessionToken = req.query.sessionToken as string;
