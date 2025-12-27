@@ -33,15 +33,31 @@ export const lostService = {
 
     return pagination.paginate({ count, rows });
   },
-  async getAllLost() {
-    return prisma.tb_lostReport.findMany({
-      include: {
-        user: { select: { id: true, name: true, email: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-  },
+  async getAllLost(page: number, limit: number) {
+    const pagination = new Pagination(page, limit);
 
+    const [count, rows] = await Promise.all([
+      prisma.tb_lostReport.count(),
+      prisma.tb_lostReport.findMany({
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        skip: pagination.skip,
+        take: pagination.limit,
+      }),
+    ]);
+
+    return pagination.paginate({ count, rows });
+  },
   async getLostById(id: number) {
     return prisma.tb_lostReport.findUnique({
       where: { id },
