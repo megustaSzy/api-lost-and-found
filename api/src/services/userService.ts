@@ -29,7 +29,7 @@ export const userService = {
         orderBy: {
           id: "asc",
         },
-        skip: pagination.skip,
+        skip: pagination.offset,
         take: pagination.limit,
       }),
     ]);
