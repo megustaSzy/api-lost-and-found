@@ -103,26 +103,26 @@ export const authController = {
       const result = await authService.requestForgotPassword(email);
       return ResponseData.ok(res, result, "Link reset password telah dikirim");
     } catch (error) {
-      next(error); 
+      next(error);
     }
   },
-  async verifyResetSession(req: Request, res: Response) {
+  async verifyResetSession(req: Request, res: Response, next: NextFunction) {
     try {
       const sessionToken = req.query.sessionToken as string;
       const result = await authService.verifySession(sessionToken);
       return ResponseData.ok(res, result, "Token valid");
-    } catch (error: any) {
-      return ResponseData.serverError(res, error.message);
+    } catch (error) {
+      next(error);
     }
   },
 
-  async resetPassword(req: Request, res: Response) {
+  async resetPassword(req: Request, res: Response, next: NextFunction) {
     try {
       const { sessionToken, newPassword } = req.body;
       const result = await authService.resetPassword(sessionToken, newPassword);
       return ResponseData.ok(res, result, "Password berhasil direset");
-    } catch (error: any) {
-      return ResponseData.serverError(res, error.message);
+    } catch (error) {
+      next(error);
     }
   },
 };
