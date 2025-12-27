@@ -1,6 +1,7 @@
 import prisma from "../lib/prisma";
 import { LostData } from "../types/lost";
 import { createError } from "../utils/createError";
+import { Pagination } from "../utils/Pagination";
 
 export const lostService = {
   async createLost(userId: number, data: LostData) {
@@ -15,13 +16,23 @@ export const lostService = {
     });
   },
 
-  async getMyLostReports(userId: number) {
-    return prisma.tb_lostReport.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-    });
-  },
+  async getMyLostReports(userId: number, page: number, limit: number) {
+    const pagination = new Pagination(page, limit);
 
+    const [count, rows] = await Promise.all([
+      prisma.tb_lostReport.count({
+        where: { userId },
+      }),
+      prisma.tb_lostReport.findMany({
+        where: { userId },
+        orderBy: { createdAt: "desc" },
+        skip: pagination.skip,
+        take: pagination.limit,
+      }),
+    ]);
+
+    return pagination.paginate({ count, rows });
+  },
   async getAllLost() {
     return prisma.tb_lostReport.findMany({
       include: {

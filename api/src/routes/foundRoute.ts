@@ -11,6 +11,7 @@ const router = Router();
 router.get("/user/pending", authMiddleware, foundController.getFoundPendingForUser);
 router.get("/user/history", authMiddleware, foundController.getFoundHistoryForUser);
 
+// found
 router.get("/", authMiddleware, foundController.getAllFound);
 router.get("/:id", authMiddleware, foundController.getFoundById);
 
@@ -22,6 +23,6 @@ router.delete("/:id", authMiddleware, authorizeRoles("Admin"), foundController.d
 router.post(
   "/admin/foundreports", authMiddleware, authorizeRoles("Admin"), upload.single("image"), foundController.createAdminFoundReport);
 
-router.get("/foundreports/admin", authMiddleware, foundController.getAdminFoundReports);
+router.get("/foundreports/admin", authMiddleware, foundController.getAdminFoundReport);
 
 export default router;

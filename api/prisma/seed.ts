@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 // seeder testing testttt
 
 async function main() {
-  const hashedPassword = await bcrypt.hash("admin123", 10);
+  const hashedPassword = await bcrypt.hash("Admin123@", 10);
 
   await prisma.tb_user.create({
     data: {

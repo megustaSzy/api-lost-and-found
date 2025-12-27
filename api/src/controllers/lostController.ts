@@ -1,4 +1,4 @@
-import { Response, Request } from "express";
+import { Response, Request, NextFunction } from "express";
 import { lostService } from "../services/lostService";
 import { ResponseData } from "../utils/Response";
 
@@ -25,7 +25,7 @@ export const lostController = {
         namaBarang,
         deskripsi: deskripsi || "",
         lokasiHilang,
-        tanggal: tanggal || null
+        tanggal: tanggal || null,
       });
 
       return ResponseData.created(res, report, "data berhasil dibuat");
@@ -34,15 +34,22 @@ export const lostController = {
     }
   },
 
-  async getMyLost(req: Request, res: Response) {
+  async getMyLost(req: Request, res: Response, next: NextFunction) {
     try {
-      const reports = await lostService.getMyLostReports(req.user!.id);
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
+
+      const reports = await lostService.getMyLostReports(
+        req.user!.id,
+        page,
+        limit
+      );
+
       return ResponseData.ok(res, reports);
-    } catch (error: any) {
-      return ResponseData.serverError(res, error.message);
+    } catch (error) {
+      next(error);
     }
   },
-
   async getAllLost(req: Request, res: Response) {
     try {
       const reports = await lostService.getAllLost();
