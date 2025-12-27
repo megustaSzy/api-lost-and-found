@@ -178,36 +178,153 @@ export const authService = {
     return { user, ...tokens };
   },
   async requestForgotPassword(email: string) {
-    if (!email) throw createError("Email wajib diisi", 400);
+    if (!email) {
+      throw createError("Email wajib diisi", 400);
+    }
 
-    const user = await prisma.tb_user.findUnique({ where: { email } });
-    if (!user) throw createError("Email tidak ditemukan", 404);
+    // 1. Cek user
+    const user = await prisma.tb_user.findUnique({
+      where: { email },
+    });
 
+    if (!user) {
+      throw createError("Email tidak ditemukan", 404);
+    }
+
+    // 2. Generate OTP & expiry
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 menit
 
-    await prisma.tb_otp.create({ data: { email, otp, expiresAt } });
+    await prisma.tb_otp.create({
+      data: {
+        email,
+        otp,
+        expiresAt,
+      },
+    });
 
+    // 3. Buat session token
     const sessionToken = createSessionToken({
       email,
       otp,
       expiresAt: expiresAt.toISOString(),
     });
 
+    // 4. Buat reset link
     const resetLink = `${process.env.FRONTEND_URL}/reset-password?sessionToken=${sessionToken}`;
 
-    await sendEmail(
-      email,
-      "Reset Password Akun Anda",
-      `<p>Halo, klik link berikut untuk reset password Anda: <a href="${resetLink}">Reset Password</a></p>`
-    );
+    // 5. Email template
+    const emailHTML = `
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reset Password</title>
+</head>
 
+<body style="margin:0;padding:0;background-color:#f4f7fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;">
+
+  <span style="display:none;visibility:hidden;opacity:0;color:transparent;height:0;width:0;">
+    Reset password akun Anda. Link hanya berlaku 5 menit.
+  </span>
+
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f7fa;">
+    <tr>
+      <td align="center" style="padding:40px 20px;">
+
+        <table width="100%" cellpadding="0" cellspacing="0"
+          style="max-width:600px;background:#ffffff;border-radius:12px;overflow:hidden;">
+
+          <tr>
+            <td align="center" style="padding:40px;background:#667eea;color:#ffffff;">
+              <div style="font-size:36px;margin-bottom:12px;">🔐</div>
+              <h1 style="margin:0;font-size:26px;font-weight:600;">Reset Password</h1>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:40px;color:#2d3748;">
+              <p style="margin:0 0 16px;">Halo,</p>
+
+              <p style="margin:0 0 24px;color:#4a5568;line-height:1.6;">
+                Kami menerima permintaan untuk mereset password akun Anda.
+                Klik tombol di bawah ini untuk melanjutkan.
+              </p>
+
+              <table align="center" style="margin-bottom:30px;">
+                <tr>
+                  <td style="background:#667eea;border-radius:8px;">
+                    <a href="${resetLink}"
+                      style="display:inline-block;padding:14px 36px;
+                      color:#ffffff;text-decoration:none;font-weight:600;">
+                      Reset Password
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <div style="background:#fef3c7;border-left:4px solid #f59e0b;
+                padding:14px;border-radius:6px;margin-bottom:24px;">
+                <p style="margin:0;font-size:14px;color:#92400e;">
+                  ⏰ <strong>Link hanya berlaku 5 menit.</strong><br/>
+                  Jika kadaluarsa, silakan lakukan permintaan ulang.
+                </p>
+              </div>
+
+              <p style="margin:0 0 8px;font-size:14px;color:#4a5568;">
+                Atau salin link berikut:
+              </p>
+
+              <div style="background:#f7fafc;border:1px solid #e2e8f0;
+                padding:10px;border-radius:6px;word-break:break-all;">
+                <a href="${resetLink}" style="font-size:13px;color:#667eea;">
+                  ${resetLink}
+                </a>
+              </div>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:30px 40px;background:#f7fafc;
+              border-top:1px solid #e2e8f0;color:#718096;">
+              <p style="margin:0 0 10px;font-size:13px;">
+                🔒 <strong>Keamanan Akun</strong>
+              </p>
+              <ul style="margin:0;padding-left:18px;font-size:13px;">
+                <li>Jika tidak meminta reset, abaikan email ini</li>
+                <li>Jangan bagikan link kepada siapapun</li>
+                <li>Gunakan password yang kuat</li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr>
+            <td align="center" style="padding:24px;font-size:12px;color:#a0aec0;">
+              <p style="margin:0;">Email otomatis, mohon tidak membalas</p>
+              <p style="margin:6px 0 0;">
+                © ${new Date().getFullYear()} Your App Name
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+`;
+
+    // 6. Kirim email
+    await sendEmail(email, "Reset Password Akun Anda", emailHTML);
+
+    // 7. Response aman
     return {
       message: "Link reset password telah dikirim lewat email",
-      resetLink,
     };
   },
-
   async verifySession(sessionToken: string) {
     if (!sessionToken) throw createError("Token tidak ditemukan", 404);
 
