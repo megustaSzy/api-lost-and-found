@@ -57,7 +57,7 @@ export const foundService = {
         orderBy: {
           createdAt: "desc",
         },
-        skip: pagination.skip,
+        skip: pagination.offset,
         take: pagination.limit,
       }),
     ]);
@@ -83,7 +83,7 @@ export const foundService = {
         orderBy: {
           createdAt: "desc", // lebih aman dari id
         },
-        skip: pagination.skip,
+        skip: pagination.offset,
         take: pagination.limit,
       }),
     ]);

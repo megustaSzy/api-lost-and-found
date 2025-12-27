@@ -26,7 +26,7 @@ export const lostService = {
       prisma.tb_lostReport.findMany({
         where: { userId },
         orderBy: { createdAt: "desc" },
-        skip: pagination.skip,
+        skip: pagination.offset,
         take: pagination.limit,
       }),
     ]);
@@ -51,7 +51,7 @@ export const lostService = {
         orderBy: {
           createdAt: "desc",
         },
-        skip: pagination.skip,
+        skip: pagination.offset,
         take: pagination.limit,
       }),
     ]);
